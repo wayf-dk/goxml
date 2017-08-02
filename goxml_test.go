@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"github.com/lestrrat/go-libxml2/types"
+	"github.com/wayf-dk/go-libxml2/types"
 //    . "github.com/y0ssar1an/q"
 )
 
