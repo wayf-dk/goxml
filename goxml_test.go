@@ -4,10 +4,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/wayf-dk/go-libxml2/types"
 	"log"
 	"net/http"
-	"github.com/wayf-dk/go-libxml2/types"
-//    . "github.com/y0ssar1an/q"
+	//    . "github.com/y0ssar1an/q"
 )
 
 type Testparams struct {
@@ -26,9 +26,9 @@ type Testparams struct {
 }
 
 var (
-	_  = log.Printf // For debugging; delete when done.
+	_ = log.Printf // For debugging; delete when done.
 
-    response = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" ID="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" Version="2.0" IssueInstant="2017-06-27T13:17:46Z" Destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="pfx2e019b04-679e-c848-ff60-9d7159ad84dc" Version="2.0" IssueInstant="2017-06-27T13:17:46Z"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><saml:Subject><saml:NameID SPNameQualifier="https://wayfsp.wayf.dk" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">_a310d22cbc3be669f6c7906e409772a54af79b04e5</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="2017-06-27T13:22:46Z" Recipient="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2017-06-27T13:17:16Z" NotOnOrAfter="2017-06-27T13:22:46Z"><saml:AudienceRestriction><saml:Audience>https://wayfsp.wayf.dk</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AuthnStatement AuthnInstant="2017-06-27T13:17:44Z" SessionNotOnOrAfter="2017-06-27T21:17:46Z" SessionIndex="_270f753ff25f97b7c70f981c052d59b7326d5a05c6"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef><saml:AuthenticatingAuthority>https://wayf.ait.dtu.dk/saml2/idp/metadata.php</saml:AuthenticatingAuthority></saml:AuthnContext></saml:AuthnStatement><saml:AttributeStatement><saml:Attribute Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="gn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue></saml:Attribute><saml:Attribute Name="sn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="cn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="preferredLanguage" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue></saml:Attribute><saml:Attribute Name="organizationName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrincipalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrimaryAffiliation" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacPersonalUniqueID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonAssurance" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonEntitlement" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganizationType" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonTargetedID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacYearOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacDateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>`
+	response = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" ID="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" Version="2.0" IssueInstant="2017-06-27T13:17:46Z" Destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="pfx2e019b04-679e-c848-ff60-9d7159ad84dc" Version="2.0" IssueInstant="2017-06-27T13:17:46Z"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><saml:Subject><saml:NameID SPNameQualifier="https://wayfsp.wayf.dk" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">_a310d22cbc3be669f6c7906e409772a54af79b04e5</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="2017-06-27T13:22:46Z" Recipient="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2017-06-27T13:17:16Z" NotOnOrAfter="2017-06-27T13:22:46Z"><saml:AudienceRestriction><saml:Audience>https://wayfsp.wayf.dk</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AuthnStatement AuthnInstant="2017-06-27T13:17:44Z" SessionNotOnOrAfter="2017-06-27T21:17:46Z" SessionIndex="_270f753ff25f97b7c70f981c052d59b7326d5a05c6"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef><saml:AuthenticatingAuthority>https://wayf.ait.dtu.dk/saml2/idp/metadata.php</saml:AuthenticatingAuthority></saml:AuthnContext></saml:AuthnStatement><saml:AttributeStatement><saml:Attribute Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="gn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue></saml:Attribute><saml:Attribute Name="sn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="cn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="preferredLanguage" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue></saml:Attribute><saml:Attribute Name="organizationName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrincipalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrimaryAffiliation" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacPersonalUniqueID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonAssurance" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonEntitlement" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganizationType" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonTargetedID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacYearOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacDateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>`
 
 	privatekey = `-----BEGIN RSA PRIVATE KEY-----
 MIICXgIBAAKBgQDCFENGw33yGihy92pDjZQhl0C36rPJj+CvfSC8+q28hxA161QF
@@ -46,8 +46,7 @@ G6aFKaqQfOXKCyWoUiVknQJAXrlgySFci/2ueKlIE1QqIiLSZ8V8OlpFLRnb1pzI
 7U1yQXnTAEFYM560yJlzUpOb1V4cScGd365tiSMvxLOvTA==
 -----END RSA PRIVATE KEY-----`
 
-
-    htmlwithresponse = `
+	htmlwithresponse = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -135,7 +134,8 @@ G6aFKaqQfOXKCyWoUiVknQJAXrlgySFci/2ueKlIE1QqIiLSZ8V8OlpFLRnb1pzI
 func ExampleSignAndValidate() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -148,12 +148,16 @@ func ExampleSignAndValidate() {
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha1")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha1")
+	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm"))
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:SignatureMethod/@Algorithm"))
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue"))
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignatureValue"))
+
+	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
+
 	// Output:
 	// http://www.w3.org/2001/04/xmlenc#sha256
 	// http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
@@ -162,19 +166,21 @@ func ExampleSignAndValidate() {
 	// http://www.w3.org/2000/09/xmldsig#rsa-sha1
 	// 3NN6sB8hU2sKZhm8kUKzHQhfBps=
 	// IlyDYG8Q7IwkQD6jWDq1WDPIrBcRgTFpGx6VCh8i0aFVL2XHQUu6sD23UmZqmoiqUXPQLFIotFEwJMZ8VlYOSBfePrFBu4ug8JiYYPII0d2njl0aN1iSe+Jf6Rp5Z7T0IIilD7DijECjt+joNkohWYYXuf2CFJM8HfNSMrya++Y=
+	// verify: <nil>
 }
 
 func ExampleXSW1() {
 	xp := NewXp(response)
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
-	xp.Sign(response.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(response, "*[2]")[0]
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    clonedResponse, _ := response.Copy()
-    clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
-    clonedResponse.RemoveChild(clonedSignature)
-    signature := xp.Query(response, "ds:Signature[1]")[0]
-    signature.(types.Element).AddChild(clonedResponse)
-    response.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	clonedResponse, _ := response.Copy()
+	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
+	clonedResponse.RemoveChild(clonedSignature)
+	signature := xp.Query(response, "ds:Signature[1]")[0]
+	signature.(types.Element).AddChild(clonedResponse)
+	response.(types.Element).SetAttribute("ID", "_evil_response_ID")
 
 	response = xp.Query(nil, "/samlp:Response[1]")[0]
 
@@ -191,14 +197,15 @@ func ExampleXSW1() {
 func ExampleXSW2() {
 	xp := NewXp(response)
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
-	xp.Sign(response.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(response, "*[2]")[0]
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    clonedResponse, _ := response.Copy()
-    clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
-    clonedResponse.RemoveChild(clonedSignature)
-    signature := xp.Query(response, "ds:Signature[1]")[0]
-    signature.AddPrevSibling(clonedResponse)
-    response.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	clonedResponse, _ := response.Copy()
+	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
+	clonedResponse.RemoveChild(clonedSignature)
+	signature := xp.Query(response, "ds:Signature[1]")[0]
+	signature.AddPrevSibling(clonedResponse)
+	response.(types.Element).SetAttribute("ID", "_evil_response_ID")
 
 	response = xp.Query(nil, "/samlp:Response[1]")[0]
 
@@ -215,13 +222,14 @@ func ExampleXSW2() {
 func ExampleXSW3() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    evilAssertion, _ := assertion.Copy()
-    copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
-    evilAssertion.RemoveChild(copiedSignature)
-    assertion.AddPrevSibling(evilAssertion)
+	evilAssertion, _ := assertion.Copy()
+	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	evilAssertion.RemoveChild(copiedSignature)
+	assertion.AddPrevSibling(evilAssertion)
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -238,17 +246,18 @@ func ExampleXSW3() {
 func ExampleXSW4() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    evilAssertion, _ := assertion.Copy()
-    copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
-    evilAssertion.RemoveChild(copiedSignature)
+	evilAssertion, _ := assertion.Copy()
+	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	evilAssertion.RemoveChild(copiedSignature)
 
-    root, _ := xp.Doc.DocumentElement()
-    root.AddChild(evilAssertion)
-    root.RemoveChild(assertion)
-    evilAssertion.AddChild(assertion)
+	root, _ := xp.Doc.DocumentElement()
+	root.AddChild(evilAssertion)
+	root.RemoveChild(assertion)
+	evilAssertion.AddChild(assertion)
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -265,17 +274,18 @@ func ExampleXSW4() {
 func ExampleXSW5() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
-    assertionCopy, _ := evilAssertion.Copy()
-    copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    assertionCopy.RemoveChild(copiedSignature)
+	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
+	assertionCopy, _ := evilAssertion.Copy()
+	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	assertionCopy.RemoveChild(copiedSignature)
 
-    root, _ := xp.Doc.DocumentElement()
-    root.AddChild(assertionCopy)
+	root, _ := xp.Doc.DocumentElement()
+	root.AddChild(assertionCopy)
 
-    evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
 	block, _ := pem.Decode([]byte(privatekey))
@@ -291,15 +301,16 @@ func ExampleXSW5() {
 func ExampleXSW6() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
-    originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    assertionCopy, _ := evilAssertion.Copy()
-    copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    assertionCopy.RemoveChild(copiedSignature)
-    originalSignature.AddChild(assertionCopy)
-    evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
+	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
+	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	assertionCopy, _ := evilAssertion.Copy()
+	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	assertionCopy.RemoveChild(copiedSignature)
+	originalSignature.AddChild(assertionCopy)
+	evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -316,14 +327,15 @@ func ExampleXSW6() {
 func ExampleXSW7() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    extensions, _ := xp.Doc.CreateElement("Extensions")
-    assertion.AddPrevSibling(extensions)
-    evilAssertion, _ := assertion.Copy()
-    copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    evilAssertion.RemoveChild(copiedSignature)
-    extensions.AddChild(evilAssertion)
+	extensions, _ := xp.Doc.CreateElement("Extensions")
+	assertion.AddPrevSibling(extensions)
+	evilAssertion, _ := assertion.Copy()
+	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	evilAssertion.RemoveChild(copiedSignature)
+	extensions.AddChild(evilAssertion)
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -340,16 +352,17 @@ func ExampleXSW7() {
 func ExampleXSW8() {
 	xp := NewXp(response)
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	xp.Sign(assertion.(types.Element), privatekey, "-", "", "sha256")
+	before := xp.Query(assertion, "*[2]")[0]
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
-    evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
-    originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
-    assertionCopy, _ := evilAssertion.Copy()
-    copiedSignature := xp.Query(assertionCopy, "ds:Signature[1]")[0]
-    assertionCopy.RemoveChild(copiedSignature)
-    object, _ := xp.Doc.CreateElement("Object")
-    originalSignature.AddChild(object)
-    object.AddChild(assertionCopy)
+	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
+	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
+	assertionCopy, _ := evilAssertion.Copy()
+	copiedSignature := xp.Query(assertionCopy, "ds:Signature[1]")[0]
+	assertionCopy.RemoveChild(copiedSignature)
+	object, _ := xp.Doc.CreateElement("Object")
+	originalSignature.AddChild(object)
+	object.AddChild(assertionCopy)
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -438,37 +451,37 @@ func ExampleEncryptAndDecrypt() {
 
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	pk := Pem2PrivateKey(privatekey, "")
-    ea := NewXp(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
+	ea := NewXp(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
 	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
 	assertion = xp.Query(nil, "//saml:EncryptedAssertion")[0]
 
 	xp.Decrypt(assertion.(types.Element), pk)
 	fmt.Print(xp.Doc.Dump(true))
 	// Output:
-    // <?xml version="1.0" encoding="UTF-8"?>
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-    //   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-    //       </saml:AuthnContext>
-    //     </saml:AuthnStatement>
-    //   </saml:Assertion>
-    // </samlp:Response>
-    // <?xml version="1.0" encoding="UTF-8"?>
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-    //   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //   <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //     <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-    //     </saml:AuthnContext>
-    //   </saml:AuthnStatement>
-    // </saml:Assertion>
-    // </samlp:Response>
+	// <?xml version="1.0" encoding="UTF-8"?>
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
+	//       </saml:AuthnContext>
+	//     </saml:AuthnStatement>
+	//   </saml:Assertion>
+	// </samlp:Response>
+	// <?xml version="1.0" encoding="UTF-8"?>
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//   <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//     <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
+	//     </saml:AuthnContext>
+	//   </saml:AuthnStatement>
+	// </saml:Assertion>
+	// </samlp:Response>
 }
 
 func ExampleValidateSchema() {

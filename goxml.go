@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/wayf-dk/go-libxml2"
+	"github.com/wayf-dk/go-libxml2/clib"
+	"github.com/wayf-dk/go-libxml2/dom"
 	"html"
 	"io"
 	"io/ioutil"
@@ -29,27 +32,24 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"github.com/wayf-dk/go-libxml2"
-	"github.com/wayf-dk/go-libxml2/clib"
-	"github.com/wayf-dk/go-libxml2/dom"
-//	"github.com/wayf-dk/go-libxml2/parser"
+	//	"github.com/wayf-dk/go-libxml2/parser"
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
-//  . "github.com/y0ssar1an/q"
+	//  . "github.com/y0ssar1an/q"
 )
 
 var _ = log.Printf // For debugging; delete when done.
 
 type (
 
-    // Xp is a wrapper for the libxml2 xmlDoc and xmlXpathContext
-    // master is a pointer to the original struct with the shared
-    // xmlDoc so that is never gets deallocated before any copies
+	// Xp is a wrapper for the libxml2 xmlDoc and xmlXpathContext
+	// master is a pointer to the original struct with the shared
+	// xmlDoc so that is never gets deallocated before any copies
 	Xp struct {
-		Doc      *dom.Document
-		Xpath    *xpath.Context
-		master   *Xp
+		Doc    *dom.Document
+		Xpath  *xpath.Context
+		master *Xp
 	}
 
 	// algo xmlsec digest and signature algorith and their Go name
@@ -111,7 +111,7 @@ func NewXp(xml string) *Xp {
 		x.Doc = doc.(*dom.Document)
 	}
 
-    x.addXPathContext();
+	x.addXPathContext()
 	return x
 }
 
@@ -123,7 +123,7 @@ func (src *Xp) CpXp() (xp *Xp) {
 	xp = new(Xp)
 	xp.Doc = src.Doc
 	xp.master = src
-    xp.addXPathContext()
+	xp.addXPathContext()
 	return
 }
 
@@ -153,19 +153,19 @@ func NewHtmlXp(html string) *Xp {
 		doc, _ := libxml2.ParseHTMLString(html)
 		x.Doc = doc.(*dom.Document)
 	}
-    // to-do look into making the namespaces map come from the client
-    x.addXPathContext();
+	// to-do look into making the namespaces map come from the client
+	x.addXPathContext()
 	return x
 }
 
-func (xp *Xp) DocGetRootElement() (*types.Node) {
+func (xp *Xp) DocGetRootElement() *types.Node {
 	root, _ := xp.Doc.DocumentElement()
 	return &root
 }
 
 // to-do make go-libxml2 accept extended param
 // to-do remove it from Xp
-func (xp *Xp) CopyNode(node types.Node, extended int) (types.Node) {
+func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 	doc, err := node.OwnerDocument()
 	if err != nil {
 		return nil
@@ -182,37 +182,37 @@ func (xp *Xp) CopyNode(node types.Node, extended int) (types.Node) {
 // Very slow on large documents with node != nil
 func (xp *Xp) C14n(node types.Node) (s string) {
 	s, err := clib.C14n(xp.Doc, node)
-//	s, err := dom.C14NSerialize{Mode: dom.C14NExclusive1_0, WithComments: false}.Serialize(xp.Doc, node)
+	//	s, err := dom.C14NSerialize{Mode: dom.C14NExclusive1_0, WithComments: false}.Serialize(xp.Doc, node)
 	if err != nil {
-	    log.Panic(err)
+		log.Panic(err)
 	}
 	return
 }
 
 // Query Do a xpath query with the given context
 // returns a slice of nodes
-func (xp *Xp) Query(context types.Node, path string) (types.NodeList) {
+func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 	if context == nil {
-        context, _ = xp.Doc.DocumentElement()
-    }
-    xp.Xpath.SetContextNode(context)
-    res, err := xp.Xpath.Find(path)
+		context, _ = xp.Doc.DocumentElement()
+	}
+	xp.Xpath.SetContextNode(context)
+	res, err := xp.Xpath.Find(path)
 	return xpath.NodeList(res, err)
 }
 
 // QueryNumber evaluates an xpath expressions that returns a number
 func (xp *Xp) QueryNumber(context types.Element, path string) (val int) {
 	if context != nil {
-    	xp.Xpath.SetContextNode(context)
-    }
+		xp.Xpath.SetContextNode(context)
+	}
 	return int(xpath.Number(xp.Xpath.Find(path)))
 }
 
 // QueryNumber evaluates an xpath expressions that returns a bool
 func (xp *Xp) QueryBool(context types.Element, path string) bool {
 	if context != nil {
-    	xp.Xpath.SetContextNode(context)
-    }
+		xp.Xpath.SetContextNode(context)
+	}
 	return xpath.Bool(xp.Xpath.Find(path))
 }
 
@@ -229,12 +229,12 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 
 // Q1 Utility function to get the content of the first node from a xpath query
 // as a string
-func (xp *Xp) Query1(context types.Node, path string) (string) {
-    res := xp.QueryMulti(context, path)
-    if len(res) > 0 {
-        return res[0]
-    }
-    return ""
+func (xp *Xp) Query1(context types.Node, path string) string {
+	res := xp.QueryMulti(context, path)
+	if len(res) > 0 {
+		return res[0]
+	}
+	return ""
 }
 
 //  QueryDashP generative xpath query - ie. mkdir -p for xpath ...
@@ -272,7 +272,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 					position, _ := strconv.ParseInt(position_s, 10, 0)
 					originalcontext := context
 					for i := 1; i <= int(position); i++ {
-					    q := ns+":"+element+"["+strconv.Itoa(i)+"]"
+						q := ns + ":" + element + "[" + strconv.Itoa(i) + "]"
 						existingelement := xp.Query(originalcontext, q)
 						if len(existingelement) > 0 {
 							context = existingelement[0].(types.Element)
@@ -286,9 +286,9 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				before = nil
 			}
 			if attribute != "" {
-			    context.(types.Element).SetAttribute(attribute, value)
-			    ctx, _ := context.(types.Element).GetAttribute(attribute)
-			    context = ctx.(types.Node)
+				context.(types.Element).SetAttribute(attribute, value)
+				ctx, _ := context.(types.Element).GetAttribute(attribute)
+				context = ctx.(types.Node)
 			}
 		}
 	}
@@ -302,7 +302,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 // CreateElementNS Create an element with the given namespace
 func (xp *Xp) createElementNS(prefix, element string, context types.Node, before types.Node) (newcontext types.Element) {
 
-    newcontext, _ = xp.Doc.CreateElementNS(Namespaces[prefix], prefix + ":" +element)
+	newcontext, _ = xp.Doc.CreateElementNS(Namespaces[prefix], prefix+":"+element)
 
 	if before != nil {
 		before.AddPrevSibling(newcontext)
@@ -310,8 +310,8 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 		if context == nil {
 			context, _ = xp.Doc.DocumentElement()
 			if context == nil {
-			    xp.Doc.SetDocumentElement(newcontext)
-			    return
+				xp.Doc.SetDocumentElement(newcontext)
+				return
 			}
 		}
 		context.AddChild(newcontext)
@@ -321,30 +321,29 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 
 // Validate - Schemavalidate the document against the the schema file given in url
 func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
-//    xsdsrc, _ := ioutil.ReadFile(url)
-    schema, err := xsd.Parse([]byte(url))
-    if err != nil {
-        panic(err)
-    }
-    defer schema.Free()
-    if err := schema.Validate(xp.Doc); err != nil {
-        return err.(xsd.SchemaValidationError).Errors(), err
-    }
-    return nil, nil
+	//    xsdsrc, _ := ioutil.ReadFile(url)
+	schema, err := xsd.Parse([]byte(url))
+	if err != nil {
+		panic(err)
+	}
+	defer schema.Free()
+	if err := schema.Validate(xp.Doc); err != nil {
+		return err.(xsd.SchemaValidationError).Errors(), err
+	}
+	return nil, nil
 }
 
 // Sign the given context with the given private key - which is a PEM or hsm: key
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
 // See https://github.com/wayf-dk/goeleven
-func (xp *Xp) Sign(context types.Element, privatekey, pw, cert, algo string) (err error) {
+func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo string) (err error) {
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
 	id := xp.Query1(context, "@ID")
-//    log.Println(id)
+	//    log.Println(id)
 
-    firstChild, _ := context.FirstChild()
-	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", firstChild).(types.Element)
+	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before).(types.Element)
 	xp.QueryDashP(signedInfo, `/ds:CanonicalizationMethod/@Algorithm`, "http://www.w3.org/2001/10/xml-exc-c14n#", nil)
 	xp.QueryDashP(signedInfo, `ds:SignatureMethod[1]/@Algorithm`, Algos[algo].Signature, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/@URI`, "#"+id, nil)
@@ -352,7 +351,7 @@ func (xp *Xp) Sign(context types.Element, privatekey, pw, cert, algo string) (er
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:Transforms/ds:Transform[2][@Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"]`, "", nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestMethod[1]/@Algorithm`, Algos[algo].digest, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestValue[1]`, contextDigest, nil)
-//    log.Println(xp.Doc.Dump(true))
+	//    log.Println(xp.Doc.Dump(true))
 
 	signedInfoC14n := xp.C14n(signedInfo)
 	digest := Hash(Algos[algo].Algo, signedInfoC14n)
@@ -372,27 +371,25 @@ func (xp *Xp) Sign(context types.Element, privatekey, pw, cert, algo string) (er
 // VerifySignature Verify a signature for the given context and public key
 func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	signaturelist := xp.Query(context, "ds:Signature[1]")
-	isvalid := len(signaturelist) > 0
-	if !isvalid {
+	if len(signaturelist) != 1 {
 		return fmt.Errorf("no signature found")
 	}
 	signature := signaturelist[0].(types.Element)
+
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
 	signedInfo := xp.Query(signature, "ds:SignedInfo")[0].(types.Element)
 	signedInfoC14n := xp.C14n(signedInfo)
 	digestValue := xp.Query1(signedInfo, "ds:Reference/ds:DigestValue")
 	ID := xp.Query1(context, "@ID")
 	URI := xp.Query1(signedInfo, "ds:Reference/@URI")
-	isvalid = "#"+ID == URI
+	isvalid := "#"+ID == URI
 	if !isvalid {
 		return fmt.Errorf("ID mismatch")
 	}
 
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
 
-    parent, _ := signature.ParentNode()
-
-	parent.RemoveChild(signature)
+	context.RemoveChild(signature)
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
@@ -461,71 +458,71 @@ func SignGoEleven(digest []byte, privatekey, algo string) (signaturevalue []byte
 }
 
 /*
-    private function signHSM($data, $keyident, $algo) {
-        // we do the hashing here - the $algo int/string confusion is due to xmlseclibs
-        // openssl_sign confusingly enough accepts just the hashing algorithm
-        $hashalgo = array(OPENSSL_ALGO_SHA1 => 'sha1', 'sha1' => 'sha1', 'SHA256' => 'sha256');
-        // always just do the RSA signing - we assume that the service can do the padding/DER encoding
-        if (!key_exists($algo, $hashalgo)) {
-            return false;
-        }
-        $algo = $hashalgo[$algo];
+   private function signHSM($data, $keyident, $algo) {
+       // we do the hashing here - the $algo int/string confusion is due to xmlseclibs
+       // openssl_sign confusingly enough accepts just the hashing algorithm
+       $hashalgo = array(OPENSSL_ALGO_SHA1 => 'sha1', 'sha1' => 'sha1', 'SHA256' => 'sha256');
+       // always just do the RSA signing - we assume that the service can do the padding/DER encoding
+       if (!key_exists($algo, $hashalgo)) {
+           return false;
+       }
+       $algo = $hashalgo[$algo];
 
-        switch ($algo) {
-            case 'sha1':
-                $t = pack('H*', '3021300906052b0e03021a05000414');
-                break;
-            case 'sha256':
-                $t = pack('H*', '3031300d060960864801650304020105000420');
-                break;
-        }
+       switch ($algo) {
+           case 'sha1':
+               $t = pack('H*', '3021300906052b0e03021a05000414');
+               break;
+           case 'sha256':
+               $t = pack('H*', '3031300d060960864801650304020105000420');
+               break;
+       }
 
-        $data = $t . hash($hashalgo[$algo], $data, true);
-        return $this->callHSM('sign', $data, $keyident, 'CKM_RSA_PKCS', '');
-    }
+       $data = $t . hash($hashalgo[$algo], $data, true);
+       return $this->callHSM('sign', $data, $keyident, 'CKM_RSA_PKCS', '');
+   }
 
-    private function decryptHSM($data, $keyident) {
-        return $this->callHSM('decrypt', $data, $keyident, 'CKM_RSA_PKCS_OAEP', 'CKM_SHA_1');
-    }
+   private function decryptHSM($data, $keyident) {
+       return $this->callHSM('decrypt', $data, $keyident, 'CKM_RSA_PKCS_OAEP', 'CKM_SHA_1');
+   }
 
-    private function callHSM($function, $data, $keyident, $mech, $digest) {
-        // limit explode to 3 items - 'hsm', the sharedkey and the url, which may contain ':'s
-        list($hsm, $sharedkey, $url) = explode(':', trim($keyident), 3);
+   private function callHSM($function, $data, $keyident, $mech, $digest) {
+       // limit explode to 3 items - 'hsm', the sharedkey and the url, which may contain ':'s
+       list($hsm, $sharedkey, $url) = explode(':', trim($keyident), 3);
 
-        $opts = array('http' =>
-          array(
-            'method'  => 'POST',
-            'header'  => "Content-Type: application/json\r\n",
-            'content' => json_encode(array(
-                'data' => base64_encode($data),
-                'mech' => $mech,
-                'digest' => $digest,
-                'function' => $function,
-                'sharedkey' => $sharedkey,
-                )),
-            'timeout' => 2
-          )
-        );
+       $opts = array('http' =>
+         array(
+           'method'  => 'POST',
+           'header'  => "Content-Type: application/json\r\n",
+           'content' => json_encode(array(
+               'data' => base64_encode($data),
+               'mech' => $mech,
+               'digest' => $digest,
+               'function' => $function,
+               'sharedkey' => $sharedkey,
+               )),
+           'timeout' => 2
+         )
+       );
 
-        $context  = stream_context_create($opts);
-        $res = file_get_contents($url, false, $context);
-        if ($res !== false) {
-            $res = json_decode($res, 1);
-            $res = base64_decode($res['signed']);
-        }
-        return $res;
+       $context  = stream_context_create($opts);
+       $res = file_get_contents($url, false, $context);
+       if ($res !== false) {
+           $res = json_decode($res, 1);
+           $res = base64_decode($res['signed']);
+       }
+       return $res;
 
-    }
+   }
 */
 
 // Encrypt the context with the given publickey
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
 func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
-    ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
-    ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
-    ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
-    ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
+	ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
+	ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
+	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
+	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
 	//sessionkey, ciphertext := encryptAES([]byte(xp.C14n(context)))
 	sessionkey, ciphertext := encryptAES([]byte(context.ToString(1, true)))
@@ -538,15 +535,15 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 	xp.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
 	parent, _ := context.ParentNode()
 
-    ec, _ := ee.Doc.DocumentElement()
-//    ec, _ = ec.Copy()
+	ec, _ := ee.Doc.DocumentElement()
+	//    ec, _ = ec.Copy()
 	context.AddPrevSibling(ec)
-    parent.RemoveChild(context)
+	parent.RemoveChild(context)
 }
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (types.Element) {
+func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.Element {
 	// for now just use what we send ourselves ...
 	encryptedkey := xp.Query1(context, "./xenc:EncryptedData/ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue")
 	encryptedkeybyte, _ := base64.StdEncoding.DecodeString(encryptedkey)
@@ -555,12 +552,12 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (types.
 	cipertextbyte, _ := base64.StdEncoding.DecodeString(cipertext)
 	plaintext := decryptAES([]byte(sessionkey), cipertextbyte)
 
-    a := NewXp(string(plaintext))
+	a := NewXp(string(plaintext))
 
-    decryptedplaintext, _ := a.Doc.DocumentElement()
+	decryptedplaintext, _ := a.Doc.DocumentElement()
 	parent, _ := context.ParentNode()
 
-    parent.RemoveChild(context)
+	parent.RemoveChild(context)
 	parent.AddChild(decryptedplaintext)
 	return decryptedplaintext.(types.Element)
 }
@@ -634,4 +631,3 @@ func Hash(h crypto.Hash, data string) []byte {
 	digest.Write([]byte(data))
 	return digest.Sum(nil)
 }
-
