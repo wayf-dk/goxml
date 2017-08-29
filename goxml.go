@@ -62,35 +62,40 @@ type (
 )
 
 // algos from shorthand to xmlsec and golang defs of digest and signature algorithms
-var Algos = map[string]algo{
-	"sha1":   algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
-	"sha256": algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
-}
+var (
+	Algos = map[string]algo{
+		"sha1":   algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
+		"sha256": algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
+	}
 
-// m map of prefix to uri for namespaces
-var Namespaces = map[string]string{
-	"algsupport": "urn:oasis:names:tc:SAML:metadata:algsupport",
-	"corto":      "http://corto.wayf.dk",
-	"ds":         "http://www.w3.org/2000/09/xmldsig#",
-	"idpdisc":    "urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol",
-	"init":       "urn:oasis:names:tc:SAML:profiles:SSO:request-init",
-	"md":         "urn:oasis:names:tc:SAML:2.0:metadata",
-	"mdattr":     "urn:oasis:names:tc:SAML:metadata:attribute",
-	"mdrpi":      "urn:oasis:names:tc:SAML:metadata:rpi",
-	"mdui":       "urn:oasis:names:tc:SAML:metadata:ui",
-	"saml":       "urn:oasis:names:tc:SAML:2.0:assertion",
-	"samlp":      "urn:oasis:names:tc:SAML:2.0:protocol",
-	"sdss":       "http://sdss.ac.uk/2006/06/WAYF",
-	"shibmd":     "urn:mace:shibboleth:metadata:1.0",
-	"SOAP-ENV":   "http://schemas.xmlsoap.org/soap/envelope/",
-	"ukfedlabel": "http://ukfederation.org.uk/2006/11/label",
-	"wayf":       "http://wayf.dk/2014/08/wayf",
-	"xenc":       "http://www.w3.org/2001/04/xmlenc#",
-	"xml":        "http://www.w3.org/XML/1998/namespace",
-	"xs":         "http://www.w3.org/2001/XMLSchema",
-	"xsi":        "http://www.w3.org/2001/XMLSchema-instance",
-	"xsl":        "http://www.w3.org/1999/XSL/Transform",
-}
+	// m map of prefix to uri for namespaces
+	Namespaces = map[string]string{
+		"algsupport": "urn:oasis:names:tc:SAML:metadata:algsupport",
+		"corto":      "http://corto.wayf.dk",
+		"ds":         "http://www.w3.org/2000/09/xmldsig#",
+		"idpdisc":    "urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol",
+		"init":       "urn:oasis:names:tc:SAML:profiles:SSO:request-init",
+		"md":         "urn:oasis:names:tc:SAML:2.0:metadata",
+		"mdattr":     "urn:oasis:names:tc:SAML:metadata:attribute",
+		"mdrpi":      "urn:oasis:names:tc:SAML:metadata:rpi",
+		"mdui":       "urn:oasis:names:tc:SAML:metadata:ui",
+		"saml":       "urn:oasis:names:tc:SAML:2.0:assertion",
+		"samlp":      "urn:oasis:names:tc:SAML:2.0:protocol",
+		"sdss":       "http://sdss.ac.uk/2006/06/WAYF",
+		"shibmd":     "urn:mace:shibboleth:metadata:1.0",
+		"SOAP-ENV":   "http://schemas.xmlsoap.org/soap/envelope/",
+		"ukfedlabel": "http://ukfederation.org.uk/2006/11/label",
+		"wayf":       "http://wayf.dk/2014/08/wayf",
+		"xenc":       "http://www.w3.org/2001/04/xmlenc#",
+		"xml":        "http://www.w3.org/XML/1998/namespace",
+		"xs":         "http://www.w3.org/2001/XMLSchema",
+		"xsi":        "http://www.w3.org/2001/XMLSchema-instance",
+		"xsl":        "http://www.w3.org/1999/XSL/Transform",
+	}
+
+	// persistent cache of compiled schemas
+	schemaCache = make(map[string]*xsd.Schema)
+)
 
 // init the library
 func init() {
@@ -322,11 +327,15 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 // Validate - Schemavalidate the document against the the schema file given in url
 func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 	//    xsdsrc, _ := ioutil.ReadFile(url)
-	schema, err := xsd.Parse([]byte(url))
-	if err != nil {
-		panic(err)
+	var schema *xsd.Schema
+	if schema = schemaCache[url]; schema == nil {
+		schema, err := xsd.Parse([]byte(url))
+		if err != nil {
+			panic(err)
+		}
+		schemaCache[url] = schema
 	}
-	defer schema.Free()
+	//	defer schema.Free() // never free keep them around until we terminate
 	if err := schema.Validate(xp.Doc); err != nil {
 		return err.(xsd.SchemaValidationError).Errors(), err
 	}
