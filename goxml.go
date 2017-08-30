@@ -329,12 +329,13 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 	//    xsdsrc, _ := ioutil.ReadFile(url)
 	var schema *xsd.Schema
 	if schema = schemaCache[url]; schema == nil {
-		schema, err := xsd.Parse([]byte(url))
+		schema, err = xsd.Parse([]byte(url))
 		if err != nil {
 			panic(err)
 		}
 		schemaCache[url] = schema
 	}
+	fmt.Println("schema", schemaCache, schema)
 	//	defer schema.Free() // never free keep them around until we terminate
 	if err := schema.Validate(xp.Doc); err != nil {
 		return err.(xsd.SchemaValidationError).Errors(), err
