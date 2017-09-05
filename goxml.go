@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -194,6 +195,18 @@ func (xp *Xp) C14n(node types.Node) (s string) {
 	return
 }
 
+func (xp *Xp) PP() string {
+	cmd := exec.Command("/usr/bin/xmllint", "--format", "-")
+	cmd.Stdin = strings.NewReader(xp.Doc.Dump(false))
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return out.String()
+}
+
 // Query Do a xpath query with the given context
 // returns a slice of nodes
 func (xp *Xp) Query(context types.Node, path string) types.NodeList {
@@ -245,9 +258,9 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 //  QueryDashP generative xpath query - ie. mkdir -p for xpath ...
 //  Understands simple xpath expressions including indexes and attribute values
 func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
-	// $query always starts with / ie. is alwayf 'absolute' in relation to the $context
 	// split in path elements, an element might include an attribute expression incl. value eg.
 	// /md:EntitiesDescriptor/md:EntityDescriptor[@entityID="https://wayf.wayf.dk"]/md:SPSSODescriptor
+	var attrContext types.Node
 
 	re := regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
 	re2 := regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
@@ -258,9 +271,11 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		buffer.WriteString(path[0][1])
 		path[0][1] = buffer.String()
 	}
+	fmt.Println("path:", path)
 
 	for _, elements := range path {
 		element := elements[1]
+		attrContext = nil
 		nodes := xp.Query(context, element)
 		if len(nodes) > 0 {
 			context = nodes[0]
@@ -270,6 +285,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 			if len(d) == 0 {
 				panic("QueryDashP problem")
 			}
+			fmt.Println("d:", d)
 			dn := d[0]
 			ns, element, position_s, attribute, value := dn[1], dn[2], dn[3], dn[4], dn[5]
 			if element != "" {
@@ -293,13 +309,17 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 			if attribute != "" {
 				context.(types.Element).SetAttribute(attribute, value)
 				ctx, _ := context.(types.Element).GetAttribute(attribute)
-				context = ctx.(types.Node)
+				attrContext = ctx.(types.Node)
 			}
 		}
 	}
 	// adding the provided value always at end ..
 	if data != "" {
-		context.SetNodeValue(html.EscapeString(data))
+		if attrContext != nil {
+			attrContext.SetNodeValue(html.EscapeString(data))
+		} else {
+			context.SetNodeValue(html.EscapeString(data))
+		}
 	}
 	return context
 }
@@ -335,7 +355,6 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 		}
 		schemaCache[url] = schema
 	}
-	fmt.Println("schema", schemaCache, schema)
 	//	defer schema.Free() // never free keep them around until we terminate
 	if err := schema.Validate(xp.Doc); err != nil {
 		return err.(xsd.SchemaValidationError).Errors(), err
@@ -351,7 +370,6 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo str
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
 	id := xp.Query1(context, "@ID")
-	//    log.Println(id)
 
 	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before).(types.Element)
 	xp.QueryDashP(signedInfo, `/ds:CanonicalizationMethod/@Algorithm`, "http://www.w3.org/2001/10/xml-exc-c14n#", nil)
@@ -361,7 +379,6 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo str
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:Transforms/ds:Transform[2][@Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"]`, "", nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestMethod[1]/@Algorithm`, Algos[algo].digest, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestValue[1]`, contextDigest, nil)
-	//    log.Println(xp.Doc.Dump(true))
 
 	signedInfoC14n := xp.C14n(signedInfo)
 	digest := Hash(Algos[algo].Algo, signedInfoC14n)
