@@ -271,7 +271,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		buffer.WriteString(path[0][1])
 		path[0][1] = buffer.String()
 	}
-	fmt.Println("path:", path)
 
 	for _, elements := range path {
 		element := elements[1]
@@ -285,7 +284,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 			if len(d) == 0 {
 				panic("QueryDashP problem")
 			}
-			fmt.Println("d:", d)
 			dn := d[0]
 			ns, element, position_s, attribute, value := dn[1], dn[2], dn[3], dn[4], dn[5]
 			if element != "" {
