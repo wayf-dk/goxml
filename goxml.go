@@ -16,6 +16,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	//	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -92,6 +93,7 @@ var (
 		"xs":         "http://www.w3.org/2001/XMLSchema",
 		"xsi":        "http://www.w3.org/2001/XMLSchema-instance",
 		"xsl":        "http://www.w3.org/1999/XSL/Transform",
+		"ec":         "http://www.w3.org/2001/10/xml-exc-c14n#",
 	}
 
 	// persistent cache of compiled schemas
@@ -186,8 +188,8 @@ func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 
 // C14n Canonicalise the node using the SAML specified exclusive method
 // Very slow on large documents with node != nil
-func (xp *Xp) C14n(node types.Node) (s string) {
-	s, err := clib.C14n(xp.Doc, node)
+func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
+	s, err := clib.C14n(xp.Doc, node, nsPrefixes)
 	//	s, err := dom.C14NSerialize{Mode: dom.C14NExclusive1_0, WithComments: false}.Serialize(xp.Doc, node)
 	if err != nil {
 		log.Panic(err)
@@ -364,7 +366,7 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
 // See https://github.com/wayf-dk/goeleven
 func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo string) (err error) {
-	contextHash := Hash(Algos[algo].Algo, xp.C14n(context))
+	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
 	id := xp.Query1(context, "@ID")
@@ -378,7 +380,7 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo str
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestMethod[1]/@Algorithm`, Algos[algo].digest, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestValue[1]`, contextDigest, nil)
 
-	signedInfoC14n := xp.C14n(signedInfo)
+	signedInfoC14n := xp.C14n(signedInfo, "")
 	digest := Hash(Algos[algo].Algo, signedInfoC14n)
 
 	var signaturevalue []byte
@@ -403,7 +405,7 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
 	signedInfo := xp.Query(signature, "ds:SignedInfo")[0].(types.Element)
-	signedInfoC14n := xp.C14n(signedInfo)
+	signedInfoC14n := xp.C14n(signedInfo, "")
 	digestValue := xp.Query1(signedInfo, "ds:Reference/ds:DigestValue")
 	ID := xp.Query1(context, "@ID")
 	URI := xp.Query1(signedInfo, "ds:Reference/@URI")
@@ -414,8 +416,10 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
 
+	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
+
 	context.RemoveChild(signature)
-	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context))
+	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
 	isvalid = isvalid && contextDigestValueComputed == digestValue
@@ -424,6 +428,7 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	}
 	signatureMethod := xp.Query1(signedInfo, "ds:SignatureMethod/@Algorithm")
 	signedInfoDigest := Hash(Algos[signatureMethod].Algo, signedInfoC14n)
+
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 	err := rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
 	return err
@@ -549,7 +554,6 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
 	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
-	//sessionkey, ciphertext := encryptAES([]byte(xp.C14n(context)))
 	sessionkey, ciphertext := encryptAES([]byte(context.ToString(1, true)))
 	sessionkey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
 	if err != nil {
@@ -571,8 +575,15 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.Element {
 	// for now just use what we send ourselves ...
 	encryptedkey := xp.Query1(context, "./xenc:EncryptedData/ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue")
-	encryptedkeybyte, _ := base64.StdEncoding.DecodeString(encryptedkey)
-	sessionkey, _ := rsa.DecryptOAEP(sha1.New(), rand.Reader, privatekey, encryptedkeybyte, nil)
+	encryptedkeybyte, err := base64.StdEncoding.DecodeString(encryptedkey)
+	if err != nil {
+		log.Panic(err)
+	}
+	sessionkey, err := rsa.DecryptOAEP(sha1.New(), rand.Reader, privatekey, encryptedkeybyte, nil)
+	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedkeybyte, nil)
+	if err != nil {
+		log.Panic(err)
+	}
 	cipertext := xp.Query1(context, "./xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
 	cipertextbyte, _ := base64.StdEncoding.DecodeString(cipertext)
 	plaintext := decryptAES([]byte(sessionkey), cipertextbyte)
