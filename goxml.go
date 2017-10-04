@@ -1,11 +1,3 @@
-// Goxml is a library for doing xml stuff in Go.
-// It uses a libxml2 dom representation of SAML "objects" and combines it with xpath for extracting information
-//
-// It also supplies a "generative-xpath" function that allows insertion into xml "objects" using (a subset of) xpath queries.
-// It uses Go's native crypto for signing and signature verification
-//
-// Except for the crypto stuff it is just a thin layer on top of a few facilities from libxml2
-
 package goxml
 
 import (
@@ -16,7 +8,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	//	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -68,7 +59,28 @@ var (
 	Algos = map[string]algo{
 		"sha1":   algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
 		"sha256": algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
+		//        "ecdsa-sha256" : algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
 	}
+
+	CryptoAlgos = map[string]algo{
+		"aes128-cbc": algo{"http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
+		"aes256-cbc": algo{"http://www.w3.org/2001/04/xmlenc#aes256-cbc", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
+		"aes128-gcm": algo{"http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
+		"aes256-gcm": algo{"http://www.w3.org/2009/xmlenc11#aes256-gcm", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
+	}
+
+	// keytransport: http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p, http://www.w3.org/2009/xmlenc11#rsa-oaep
+	/*
+	MGF1 with SHA1:   http://www.w3.org/2009/xmlenc11#mgf1sha1
+	MGF1 with SHA224: http://www.w3.org/2009/xmlenc11#mgf1sha224
+	MGF1 with SHA256: http://www.w3.org/2009/xmlenc11#mgf1sha256
+	MGF1 with SHA384: http://www.w3.org/2009/xmlenc11#mgf1sha384
+	MGF1 with SHA512: http://www.w3.org/2009/xmlenc11#mgf1sha512
+
+
+
+
+	*/
 
 	// m map of prefix to uri for namespaces
 	Namespaces = map[string]string{
@@ -89,6 +101,7 @@ var (
 		"ukfedlabel": "http://ukfederation.org.uk/2006/11/label",
 		"wayf":       "http://wayf.dk/2014/08/wayf",
 		"xenc":       "http://www.w3.org/2001/04/xmlenc#",
+        "xenc11":     "http://www.w3.org/2009/xmlenc11#",
 		"xml":        "http://www.w3.org/XML/1998/namespace",
 		"xs":         "http://www.w3.org/2001/XMLSchema",
 		"xsi":        "http://www.w3.org/2001/XMLSchema-instance",
@@ -554,7 +567,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
 	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
-	sessionkey, ciphertext := encryptAES([]byte(context.ToString(1, true)))
+	sessionkey, ciphertext := encryptAESCBC([]byte(context.ToString(1, true)))
 	sessionkey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
 	if err != nil {
 		panic(err)
@@ -573,20 +586,84 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
 func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.Element {
-	// for now just use what we send ourselves ...
-	encryptedkey := xp.Query1(context, "./xenc:EncryptedData/ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue")
-	encryptedkeybyte, err := base64.StdEncoding.DecodeString(encryptedkey)
+	// meta http://www.w3.org/2009/xmlenc11#aes128-gcm http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p http://www.w3.org/2000/09/xmldsig#sha1
+	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
+	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
+	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
+	OAEPparams := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc:OAEPparams")
+	MGF := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc11:MGF/@Algorithm")
+	encryptedKey := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue")
+
+	decrypt := decryptGCM
+	digestAlgorithm := crypto.SHA1
+	mgfAlgorithm := crypto.SHA1
+
+	switch keyEncryptionMethod {
+	case "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p":
+		mgfAlgorithm = crypto.SHA1
+	case "http://www.w3.org/2009/xmlenc11#rsa-oaep":
+		switch MGF {
+		case "http://www.w3.org/2009/xmlenc11#mgf1sha1":
+			mgfAlgorithm = crypto.SHA1
+		case "http://www.w3.org/2009/xmlenc11#mgf1sha256":
+			mgfAlgorithm = crypto.SHA256
+		default:
+			log.Panicf("unsupported MGF: %s", MGF)
+		}
+	default:
+		log.Panicf("unsupported keyEncryptionMethod: %s", keyEncryptionMethod)
+	}
+
+    switch digestMethod {
+        case "http://www.w3.org/2000/09/xmldsig#sha1": digestAlgorithm = crypto.SHA1
+        case "http://www.w3.org/2001/04/xmlenc#sha256": digestAlgorithm = crypto.SHA256
+        case "http://www.w3.org/2001/04/xmldsig-more#sha384": digestAlgorithm = crypto.SHA384
+        case "http://www.w3.org/2001/04/xmlenc#sha512": digestAlgorithm = crypto.SHA512
+		default: log.Panicf("unsupported digestMethod: %s", digestMethod)
+	}
+
+	switch encryptionMethod {
+	case "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2009/xmlenc11#aes192-cbc", "http://www.w3.org/2001/04/xmlenc#aes256-cbc":
+		decrypt = decryptCBC
+	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
+		decrypt = decryptGCM
+	default:
+		log.Panicf("unsupported encryptionMethod: %s", encryptionMethod)
+	}
+
+	encryptedKeybyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encryptedKey))
 	if err != nil {
 		log.Panic(err)
 	}
-	sessionkey, err := rsa.DecryptOAEP(sha1.New(), rand.Reader, privatekey, encryptedkeybyte, nil)
-	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedkeybyte, nil)
+
+	OAEPparamsbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(OAEPparams))
 	if err != nil {
 		log.Panic(err)
 	}
-	cipertext := xp.Query1(context, "./xenc:EncryptedData/xenc:CipherData/xenc:CipherValue")
-	cipertextbyte, _ := base64.StdEncoding.DecodeString(cipertext)
-	plaintext := decryptAES([]byte(sessionkey), cipertextbyte)
+
+	sessionkey, err := rsa.DecryptOAEP2(digestAlgorithm.New(), mgfAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
+	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	switch len(sessionkey) {
+	case 16, 24, 32:
+	default:
+		log.Panicf("Unsupported keylength for AES %d", len(sessionkey))
+	}
+
+	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
+	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
+
+	fmt.Println("plain", string(plaintext))
+
+	return nil
 
 	a := NewXp(string(plaintext))
 
@@ -611,7 +688,7 @@ func Pem2PrivateKey(privatekeypem, pw string) (privatekey *rsa.PrivateKey) {
 }
 
 // encryptAES encrypts the plaintext with a generated random key and returns both the key and the ciphertext
-func encryptAES(plaintext []byte) (key, ciphertext []byte) {
+func encryptAESCBC(plaintext []byte) (key, ciphertext []byte) {
 	key = make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		panic(err)
@@ -637,7 +714,33 @@ func encryptAES(plaintext []byte) (key, ciphertext []byte) {
 }
 
 // decryptAES decrypts the ciphertext using the supplied key
-func decryptAES(key, ciphertext []byte) (plaintext []byte) {
+func decryptGCM(key, ciphertext []byte) (plaintext []byte) {
+	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
+		panic("Not enough data to decrypt for AES-GCM")
+	}
+
+	iv := ciphertext[:12]
+	ciphertext = ciphertext[12:]
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	plaintext, err = aesgcm.Open(nil, iv, ciphertext, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	return
+}
+
+// decryptAES decrypts the ciphertext using the supplied key
+func decryptCBC(key, ciphertext []byte) (plaintext []byte) {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
