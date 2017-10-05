@@ -62,26 +62,6 @@ var (
 		//        "ecdsa-sha256" : algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
 	}
 
-	CryptoAlgos = map[string]algo{
-		"aes128-cbc": algo{"http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
-		"aes256-cbc": algo{"http://www.w3.org/2001/04/xmlenc#aes256-cbc", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
-		"aes128-gcm": algo{"http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
-		"aes256-gcm": algo{"http://www.w3.org/2009/xmlenc11#aes256-gcm", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
-	}
-
-	// keytransport: http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p, http://www.w3.org/2009/xmlenc11#rsa-oaep
-	/*
-	MGF1 with SHA1:   http://www.w3.org/2009/xmlenc11#mgf1sha1
-	MGF1 with SHA224: http://www.w3.org/2009/xmlenc11#mgf1sha224
-	MGF1 with SHA256: http://www.w3.org/2009/xmlenc11#mgf1sha256
-	MGF1 with SHA384: http://www.w3.org/2009/xmlenc11#mgf1sha384
-	MGF1 with SHA512: http://www.w3.org/2009/xmlenc11#mgf1sha512
-
-
-
-
-	*/
-
 	// m map of prefix to uri for namespaces
 	Namespaces = map[string]string{
 		"algsupport": "urn:oasis:names:tc:SAML:metadata:algsupport",
@@ -101,7 +81,7 @@ var (
 		"ukfedlabel": "http://ukfederation.org.uk/2006/11/label",
 		"wayf":       "http://wayf.dk/2014/08/wayf",
 		"xenc":       "http://www.w3.org/2001/04/xmlenc#",
-        "xenc11":     "http://www.w3.org/2009/xmlenc11#",
+		"xenc11":     "http://www.w3.org/2009/xmlenc11#",
 		"xml":        "http://www.w3.org/XML/1998/namespace",
 		"xs":         "http://www.w3.org/2001/XMLSchema",
 		"xsi":        "http://www.w3.org/2001/XMLSchema-instance",
@@ -585,8 +565,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.Element {
-	// meta http://www.w3.org/2009/xmlenc11#aes128-gcm http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p http://www.w3.org/2000/09/xmldsig#sha1
+func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) *Xp {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -614,12 +593,17 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.E
 		log.Panicf("unsupported keyEncryptionMethod: %s", keyEncryptionMethod)
 	}
 
-    switch digestMethod {
-        case "http://www.w3.org/2000/09/xmldsig#sha1": digestAlgorithm = crypto.SHA1
-        case "http://www.w3.org/2001/04/xmlenc#sha256": digestAlgorithm = crypto.SHA256
-        case "http://www.w3.org/2001/04/xmldsig-more#sha384": digestAlgorithm = crypto.SHA384
-        case "http://www.w3.org/2001/04/xmlenc#sha512": digestAlgorithm = crypto.SHA512
-		default: log.Panicf("unsupported digestMethod: %s", digestMethod)
+	switch digestMethod {
+	case "http://www.w3.org/2000/09/xmldsig#sha1":
+		digestAlgorithm = crypto.SHA1
+	case "http://www.w3.org/2001/04/xmlenc#sha256":
+		digestAlgorithm = crypto.SHA256
+	case "http://www.w3.org/2001/04/xmldsig-more#sha384":
+		digestAlgorithm = crypto.SHA384
+	case "http://www.w3.org/2001/04/xmlenc#sha512":
+		digestAlgorithm = crypto.SHA512
+	default:
+		log.Panicf("unsupported digestMethod: %s", digestMethod)
 	}
 
 	switch encryptionMethod {
@@ -661,18 +645,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) types.E
 
 	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
 
-	fmt.Println("plain", string(plaintext))
-
-	return nil
-
-	a := NewXp(string(plaintext))
-
-	decryptedplaintext, _ := a.Doc.DocumentElement()
-	parent, _ := context.ParentNode()
-
-	parent.RemoveChild(context)
-	parent.AddChild(decryptedplaintext)
-	return decryptedplaintext.(types.Element)
+	return NewXp(string(plaintext))
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey

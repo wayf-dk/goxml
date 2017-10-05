@@ -1,12 +1,15 @@
 package goxml
 
 import (
+	"crypto"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"github.com/wayf-dk/go-libxml2/types"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	//    . "github.com/y0ssar1an/q"
 )
 
@@ -383,9 +386,15 @@ func ExampleEncryptAndDecrypt() {
 	ea := NewXp(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
 	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
 
-	assertion = xp.Query(nil, "//saml:EncryptedAssertion")[0]
+	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
+	encryptedData := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+	decryptedAssertion := xp.Decrypt(encryptedData.(types.Element), pk)
 
-	xp.Decrypt(assertion.(types.Element), pk)
+	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+	parent, _ := encryptedAssertion.ParentNode()
+	parent.RemoveChild(encryptedAssertion)
+
 	fmt.Print(xp.Doc.Dump(true))
 	// Output:
 	// <?xml version="1.0" encoding="UTF-8"?>
@@ -426,4 +435,77 @@ func ExampleValidateSchema() {
 	// [] <nil>
 	// [Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).] schema validation failed
 
+}
+
+func ExampleDecryptShibResponse() {
+
+	xml, err := ioutil.ReadFile("testdata/testshib.org.encryptedresponse.xml")
+	if err != nil {
+		log.Panic(err)
+	}
+	shibresponse := NewXp(string(xml))
+
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	block, _ := pem.Decode([]byte(privatekey))
+	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+	encryptedData := shibresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+	decryptedAssertion := shibresponse.Decrypt(encryptedData.(types.Element), priv)
+
+	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+	parent, _ := encryptedAssertion.ParentNode()
+	parent.RemoveChild(encryptedAssertion)
+
+	fmt.Printf("%x\n", Hash(crypto.SHA256, shibresponse.PP()))
+
+	/*
+		signatures := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
+		// don't do this in real life !!!
+		certs := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
+
+		if len(signatures) == 1 {
+		    // fix - using package above us
+			if err = gosaml.VerifySign(shibresponse, certs, signatures); err != nil {
+				log.Panic(err)
+			}
+		}
+		fmt.Println(shibresponse.PP())
+	*/
+
+	// Output:
+	// d2208d91bef4c46182fa27dd1affcaa14d86d202c74d05273d1d4da7ae033a01
+}
+
+func ExampleDecrypt() {
+
+	tests := []string{
+		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
+		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml",
+		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml",
+		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml",
+	}
+
+	for _, test := range tests {
+		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
+		parts := strings.Split(test, "__")
+		pemFile := "testdata/w3c/" + parts[1] + ".pem"
+		pemBlock, _ := ioutil.ReadFile(pemFile)
+		block, _ := pem.Decode(pemBlock)
+		pKey, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+		xp := NewXp("<dummy>" + string(cipherText) + "</dummy>")
+		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
+
+		decrypted := xp.Decrypt(encryptedData.(types.Element), pKey)
+		fmt.Printf("%x\n", Hash(crypto.SHA256, decrypted.PP()))
+	}
+	// Output:
+	// 07e64372f387aed0bb16e750373e3315692bcbde71a5497eab8eeb317a047dbc
+	// 07e64372f387aed0bb16e750373e3315692bcbde71a5497eab8eeb317a047dbc
+	// 07e64372f387aed0bb16e750373e3315692bcbde71a5497eab8eeb317a047dbc
+	// 07e64372f387aed0bb16e750373e3315692bcbde71a5497eab8eeb317a047dbc
 }
