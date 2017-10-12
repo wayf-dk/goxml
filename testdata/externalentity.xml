@@ -1,0 +1,8 @@
+<!DOCTYPE foo [
+  <!ELEMENT foo ANY>
+  <!ENTITY bar SYSTEM
+  "file:///etc/lsb-release">
+]>
+<foo>
+  &bar;
+</foo>
