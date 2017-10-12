@@ -3,6 +3,7 @@ package goxml
 import (
 	"crypto"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"github.com/wayf-dk/go-libxml2/types"
@@ -31,9 +32,9 @@ type Testparams struct {
 var (
 	_ = log.Printf // For debugging; delete when done.
 
-	response = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" ID="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" Version="2.0" IssueInstant="2017-06-27T13:17:46Z" Destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="pfx2e019b04-679e-c848-ff60-9d7159ad84dc" Version="2.0" IssueInstant="2017-06-27T13:17:46Z"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><saml:Subject><saml:NameID SPNameQualifier="https://wayfsp.wayf.dk" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">_a310d22cbc3be669f6c7906e409772a54af79b04e5</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="2017-06-27T13:22:46Z" Recipient="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2017-06-27T13:17:16Z" NotOnOrAfter="2017-06-27T13:22:46Z"><saml:AudienceRestriction><saml:Audience>https://wayfsp.wayf.dk</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AuthnStatement AuthnInstant="2017-06-27T13:17:44Z" SessionNotOnOrAfter="2017-06-27T21:17:46Z" SessionIndex="_270f753ff25f97b7c70f981c052d59b7326d5a05c6"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef><saml:AuthenticatingAuthority>https://wayf.ait.dtu.dk/saml2/idp/metadata.php</saml:AuthenticatingAuthority></saml:AuthnContext></saml:AuthnStatement><saml:AttributeStatement><saml:Attribute Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="gn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue></saml:Attribute><saml:Attribute Name="sn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="cn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="preferredLanguage" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue></saml:Attribute><saml:Attribute Name="organizationName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrincipalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrimaryAffiliation" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacPersonalUniqueID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonAssurance" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonEntitlement" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganizationType" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonTargetedID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacYearOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacDateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>`
+//	response = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" ID="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" Version="2.0" IssueInstant="2017-06-27T13:17:46Z" Destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><saml:Assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="pfx2e019b04-679e-c848-ff60-9d7159ad84dc" Version="2.0" IssueInstant="2017-06-27T13:17:46Z"><saml:Issuer>https://wayf.wayf.dk</saml:Issuer><saml:Subject><saml:NameID SPNameQualifier="https://wayfsp.wayf.dk" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">_a310d22cbc3be669f6c7906e409772a54af79b04e5</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="2017-06-27T13:22:46Z" Recipient="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2017-06-27T13:17:16Z" NotOnOrAfter="2017-06-27T13:22:46Z"><saml:AudienceRestriction><saml:Audience>https://wayfsp.wayf.dk</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AuthnStatement AuthnInstant="2017-06-27T13:17:44Z" SessionNotOnOrAfter="2017-06-27T21:17:46Z" SessionIndex="_270f753ff25f97b7c70f981c052d59b7326d5a05c6"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef><saml:AuthenticatingAuthority>https://wayf.ait.dtu.dk/saml2/idp/metadata.php</saml:AuthenticatingAuthority></saml:AuthnContext></saml:AuthnStatement><saml:AttributeStatement><saml:Attribute Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="gn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue></saml:Attribute><saml:Attribute Name="sn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="cn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="preferredLanguage" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue></saml:Attribute><saml:Attribute Name="organizationName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrincipalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrimaryAffiliation" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacPersonalUniqueID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonAssurance" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonEntitlement" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganizationType" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonTargetedID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacYearOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacDateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue></saml:Attribute></saml:AttributeStatement></saml:Assertion></samlp:Response>`
 
-	privatekey = `-----BEGIN RSA PRIVATE KEY-----
+/*	privatekey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAn2vgnrcRhcpJALWU9JUX7KReryIkbe53dTJLFH5airEWNMMc
 6qjbPLrj/KCTdPQrk1GPsrK4nx1nnuS2OxaQs44wXn3VbZR2jwqNdYy7zD5Wi9Wr
 zXW3NgwXFI6amhKN22OkiNddlO5oiBV/yhvD/taQUZKESOUhriFTTg67Z9+lRDc4
@@ -60,13 +61,128 @@ AbT5AoGBAIFmDA6C68UgQZnjtclCOLutabuFkfS+ohsYLriZt+zWjW1DPIpM2Zmt
 duyJRSUP9W7yRPoeB+hll98WFYBZzj8rWWLT1Xu1dsnQBgeLDBqWxT9iZq+1QtxU
 StCqvZ+mExuZpIZ499ZioAKtwVj5XBViz+ayeLT0+2rXkTx5Tt9L
 -----END RSA PRIVATE KEY-----
-`
+`*/
 )
 
+func xpFromFile(file string) (res *Xp) {
+	xml, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Panic(err)
+	}
+	res = NewXp(string(xml))
+	return
+}
+
+/*func ExampleCpXp(){
+	xp := xpFromFile("testdata/response.xml")
+	fmt.Println(xp.CpXp())
+	// Output:
+	//CPXP
+}
+/*
+func ExampleAddXPathContext(){
+	xp := xpFromFile("testdata/response.xml")
+	xp.addXPathContext()
+	// Output:
+	//ADDXPATHCONTEXT
+}
+*/
+/*func ExampleInvalidDoc(){
+	xp := xpFromFile("testdata/invaliddoc.xml")
+	fmt.Println(xp)
+	// Output:
+	//Invalid Document
+}
+
+
+func ExampleAddXPathContext(){
+	xp := xpFromFile("testdata/response.xml")
+	xp.addXPathContext()
+	// Output:
+	//ADDXPATHCONTEXT
+}
+*/
+
+func ExampleQueryAllNodes() {
+	xp := xpFromFile("testdata/response.xml")
+	xp_res := xp.Query(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute`)
+	fmt.Println(xp_res)
+	// Output:
+	// <saml:Attribute Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="gn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue></saml:Attribute><saml:Attribute Name="sn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="cn" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue></saml:Attribute><saml:Attribute Name="preferredLanguage" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue></saml:Attribute><saml:Attribute Name="organizationName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrincipalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonPrimaryAffiliation" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacPersonalUniqueID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonAssurance" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonEntitlement" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacHomeOrganizationType" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue></saml:Attribute><saml:Attribute Name="eduPersonTargetedID" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacYearOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue></saml:Attribute><saml:Attribute Name="schacDateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue></saml:Attribute>
+}
+func ExampleQueryAllNodeValues() {
+	xp := xpFromFile("testdata/response.xml")
+	xp_res := xp.Query(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
+	fmt.Println(xp_res)
+	// Output:
+	// <saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">Mads Freek</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">Petersen</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">Mads Freek Petersen</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">da-DK</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">Danmarks Tekniske Universitet</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">madpe@dtu.dk</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">staff</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">2</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:tcs:escience-user</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">dtu.dk</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">1959</saml:AttributeValue><saml:AttributeValue xsi:type="xs:string">19590824</saml:AttributeValue>
+}
+
+func ExampleQueryNumber() {
+	xp := xpFromFile("testdata/response.xml")
+	count := xp.QueryNumber(nil, `count(./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue)`)
+	fmt.Println("count", count)
+	// Output:
+	// count 16
+}
+
+func ExampleQueryBool() {
+	xp := xpFromFile("testdata/response.xml")
+	boolean := xp.QueryBool(nil, `count(./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue) > 10`)
+	fmt.Println("count", boolean)
+	// Output:
+	// count true
+}
+
+func ExampleNewXpFromNode() {
+	xp := xpFromFile("testdata/response.xml")
+	node := xp.Query(nil, `./saml:Assertion`)[0]
+	xp_res := NewXpFromNode(node)
+	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp_res.PP())))
+	// Output:
+	// FGBIuAzvgTGA9f0CIuLDPSZP7dE=
+}
+
+func ExampleQueryMulti() {
+	xp := xpFromFile("testdata/response.xml")
+	xp_res := xp.QueryMulti(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
+	fmt.Println(xp_res)
+	// Output:
+	// [madpe@dtu.dk Mads Freek Petersen Mads Freek Petersen da-DK Danmarks Tekniske Universitet madpe@dtu.dk staff urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763 2 urn:mace:terena.org:tcs:escience-user dtu.dk urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3 1959 19590824]
+}
+
+func ExampleEmptyDoc() {
+	xp := xpFromFile("testdata/emptydoc.xml")
+	fmt.Println(xp)
+	// Output:
+	//&{<?xml version="1.0" encoding="utf-8"?>
+	//  0xc82000de60 <nil>}
+}
+
+func ExampleExternalEntity() {
+	xp := xpFromFile("testdata/externalentity.xml")
+	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp.PP())))
+	// Output:
+	// bjww5SOaP/xLbmTrEVbMI5Bfw4g=
+}
+
+func ExampleValidDoc() {
+	xp := xpFromFile("testdata/validdoc.xml")
+	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp.PP())))
+	// Output:
+	// HIFwbby98ifzfaYaHi0G40iWxUU=
+}
+
 func ExampleSignAndValidate() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
@@ -97,14 +213,20 @@ func ExampleSignAndValidate() {
 	// http://www.w3.org/2000/09/xmldsig#sha1
 	// http://www.w3.org/2000/09/xmldsig#rsa-sha1
 	// 3NN6sB8hU2sKZhm8kUKzHQhfBps=
-	// kzDmsf6lzz/cEa+xMyGJ2MvtsGgAhSOxqE/KAFCfmaZA9UzzLqJZCs3s/SKPOM9LnVBAtge1uMmouEYIBoQUKetVAcZ6a8Rup89elZUgkHlEF2SnAfJ9nVF+QnBX+VI2+qLxn2HUFrXydUPjvT3UeZ+KFHEbeOHlYILF5ZZGk5Qxlk+lbvBaCRNK6YtlEMWTmzj4uapuFSC+cWqko0a7D8RCJ/5waDeQJ1yQ6GM1/8aBOYIVvHT2VG0zD9K1Z3U7I0I4FO0SdeV6vyWBvDWepP8H9jUNsEKikbJ2ppe6xY3Lq0LzuPE5FVgQyouz1Wmc/r5Hgkr9UOZl63+VyTGl7A==
+	// gZQYBrzigDvKZTJcSaNfPJOYvqDBgV6zOCV9ghw67jEMVrbcz4XCBp3wjVI2z9rUnkn0Swi11BvW/qOIKhS13BAfGH+j6+1qRHDOlfcZntmqb1fFPVq+geuwQ1CVWWFFQ4zhg96ihzvQG1P2Sqj1TzUWIRtYHueleDJLXLD8yYAxj1TReT6flzPKtJAGr7h03GHgQPyBk6hWvvrP3Jb/sDYRWBOUFoj2uCqpQcU2nA8Li1QWmhDGSjgMmgNtTF2Zr8bukfEMvxjt0YZBAFcf26EGqQS3wbmBGSGpszKL78AdFFJZRBLs9Zk4iClu8GnEvCdB68T0klywvLzu/tsVDQ==
 	// verify: <nil>
 }
 
 func ExampleXSW1() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	clonedResponse, _ := response.Copy()
@@ -127,9 +249,15 @@ func ExampleXSW1() {
 }
 
 func ExampleXSW2() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	clonedResponse, _ := response.Copy()
@@ -152,9 +280,15 @@ func ExampleXSW2() {
 }
 
 func ExampleXSW3() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	evilAssertion, _ := assertion.Copy()
@@ -176,9 +310,15 @@ func ExampleXSW3() {
 }
 
 func ExampleXSW4() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	evilAssertion, _ := assertion.Copy()
@@ -204,9 +344,15 @@ func ExampleXSW4() {
 }
 
 func ExampleXSW5() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
@@ -231,9 +377,15 @@ func ExampleXSW5() {
 }
 
 func ExampleXSW6() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
@@ -257,9 +409,15 @@ func ExampleXSW6() {
 }
 
 func ExampleXSW7() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	extensions, _ := xp.Doc.CreateElement("Extensions")
@@ -282,9 +440,15 @@ func ExampleXSW7() {
 }
 
 func ExampleXSW8() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
 	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
@@ -309,7 +473,8 @@ func ExampleXSW8() {
 }
 
 func ExampleQueryDashP_1() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]`, "anton", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]`, "joe", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
@@ -382,6 +547,12 @@ func ExampleEncryptAndDecrypt() {
 	fmt.Print(xp.Doc.Dump(true))
 
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
+	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	privatekey := string(pkey)
+
 	pk := Pem2PrivateKey(privatekey, "")
 	ea := NewXp(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
 	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
@@ -424,7 +595,8 @@ func ExampleEncryptAndDecrypt() {
 }
 
 func ExampleValidateSchema() {
-	xp := NewXp(response)
+	//xp := NewXp(response)
+	xp := xpFromFile("testdata/response.xml")
 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
 	// make the document schema-invalid
 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]

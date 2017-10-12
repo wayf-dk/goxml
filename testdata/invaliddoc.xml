@@ -1,0 +1,120 @@
+<samlp:response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" id="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" version="2.0" issueinstant="2017-06-27T13:17:46Z" destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" inresponseto="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735">
+	<saml:issuer>
+		https://wayf.wayf.dk
+	</saml:issuer>
+	<samlp:status>
+		<samlp:statuscode value="urn:oasis:names:tc:SAML:2.0:status:Success" />
+	</samlp:status>
+	<saml:assertion xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" id="pfx2e019b04-679e-c848-ff60-9d7159ad84dc" version="2.0" issueinstant="2017-06-27T13:17:46Z">
+		<saml:issuer>
+			https://wayf.wayf.dk
+		</saml:issuer>
+		<saml:subject>
+			<saml:nameid spnamequalifier="https://wayfsp.wayf.dk" format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">
+				_a310d22cbc3be669f6c7906e409772a54af79b04e5
+			</saml:nameid>
+			<saml:subjectconfirmation method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+				<saml:subjectconfirmationdata notonorafter="2017-06-27T13:22:46Z" recipient="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" inresponseto="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735" /> 
+			</saml:subjectconfirmation>
+		</saml:subject>
+		<saml:conditions notbefore="2017-06-27T13:17:16Z" notonorafter="2017-06-27T13:22:46Z">
+			<saml:audiencerestriction>
+				<saml:audience>
+					https://wayfsp.wayf.dk
+				</saml:audience>
+			</saml:audiencerestriction>
+		</saml:conditions>
+		<saml:authnstatement authninstant="2017-06-27T13:17:44Z" sessionnotonorafter="2017-06-27T21:17:46Z" sessionindex="_270f753ff25f97b7c70f981c052d59b7326d5a05c6">
+			<saml:authncontext>
+				<saml:authncontextclassref>
+					urn:oasis:names:tc:SAML:2.0:ac:classes:Password
+				</saml:authncontextclassref>
+				<saml:authenticatingauthority>
+					https://wayf.ait.dtu.dk/saml2/idp/metadata.php
+				</saml:authenticatingauthority>
+			</saml:authncontext>
+		</saml:authnstatement>
+		<saml:attributestatement>
+			<saml:attribute name="mail" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					madpe@dtu.dk
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="gn" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					Mads Freek
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="sn" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					Petersen&
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="cn" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					Mads Freek Petersen
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="preferredLanguage" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					da-DK
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="organizationName" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					Danmarks Tekniske Universitet
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="eduPersonPrincipalName" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					madpe@dtu.dk
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="eduPersonPrimaryAffiliation" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					staff
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="schacPersonalUniqueID" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="eduPersonAssurance" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					2
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="eduPersonEntitlement" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					urn:mace:terena.org:tcs:escience-user
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="schacHomeOrganization" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					dtu.dk
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="schacHomeOrganizationType" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="eduPersonTargetedID" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="schacYearOfBirth" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					1959
+				</saml:attributevalue>
+			</saml:attribute>
+			<saml:attribute name="schacDateOfBirth" nameformat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic">
+				<saml:attributevalue xsi:type="xs:string">
+					19590824
+				</saml:attributevalue>
+			</saml:attribute>
+		</saml:attributestatement>
+	</saml:assertion>
+</samlp:response>
