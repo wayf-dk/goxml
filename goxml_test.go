@@ -481,6 +481,51 @@ func ExampleDecryptShibResponse() {
 	// d2208d91bef4c46182fa27dd1affcaa14d86d202c74d05273d1d4da7ae033a01
 }
 
+func ExampleDecryptNemloginResponse() {
+
+	xml, err := ioutil.ReadFile("testdata/nemlogin.encryptedresponse.xml")
+	if err != nil {
+		log.Panic(err)
+	}
+	nemloginresponse := NewXp(string(xml))
+
+	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	block, _ := pem.Decode([]byte(privatekey))
+	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+	encryptedData := nemloginresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+	decryptedAssertion := nemloginresponse.Decrypt(encryptedData.(types.Element), priv)
+
+	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+	parent, _ := encryptedAssertion.ParentNode()
+	parent.RemoveChild(encryptedAssertion)
+
+	//fmt.Println(nemloginresponse.PP())
+	fmt.Printf("%x\n", Hash(crypto.SHA256, nemloginresponse.PP()))
+
+	/*
+		signatures := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
+		// don't do this in real life !!!
+		certs := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
+
+		if len(signatures) == 1 {
+		    // fix - using package above us
+			if err = gosaml.VerifySign(nemloginresponse, certs, signatures); err != nil {
+				log.Panic(err)
+			}
+		}
+		fmt.Println(nemloginresponse.PP())
+	*/
+
+	// Output:
+	// 8f65205d74a139ee8d7adabada3dc54ccf4bf936f15e19680fdf3b3255f41fd4
+}
+
 func ExampleDecrypt() {
 
 	tests := []string{
@@ -493,6 +538,7 @@ func ExampleDecrypt() {
 	for _, test := range tests {
 		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
 		parts := strings.Split(test, "__")
+
 		pemFile := "testdata/w3c/" + parts[1] + ".pem"
 		pemBlock, _ := ioutil.ReadFile(pemFile)
 		block, _ := pem.Decode(pemBlock)

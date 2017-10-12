@@ -382,6 +382,10 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo str
 	} else {
 		signaturevalue, err = SignGo(digest, privatekey, pw, algo)
 	}
+	if err != nil {
+		return
+	}
+
 	signatureval := base64.StdEncoding.EncodeToString(signaturevalue)
 	xp.QueryDashP(context, `ds:Signature/ds:SignatureValue`, signatureval, nil)
 	xp.QueryDashP(context, `ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate`, cert, nil)
