@@ -428,6 +428,7 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 	err := rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
+	fmt.Println("rsa error", err, signatureMethod)
 	return err
 }
 

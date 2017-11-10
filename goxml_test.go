@@ -153,10 +153,9 @@ func ExampleQueryMulti() {
 
 func ExampleEmptyDoc() {
 	xp := xpFromFile("testdata/emptydoc.xml")
-	fmt.Println(xp)
+	fmt.Println(xp.Doc.Dump(false))
 	// Output:
-	//&{<?xml version="1.0" encoding="utf-8"?>
-	//  0xc82000de60 <nil>}
+	// <?xml version="1.0" encoding="UTF-8"?>
 }
 
 func ExampleExternalEntity() {
