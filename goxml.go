@@ -18,7 +18,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -191,15 +190,8 @@ func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
 }
 
 func (xp *Xp) PP() string {
-	cmd := exec.Command("/usr/bin/xmllint", "--format", "-")
-	cmd.Stdin = strings.NewReader(xp.Doc.Dump(false))
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return out.String()
+	root, _ := xp.Doc.DocumentElement()
+	return walk(root, 0)
 }
 
 // Query Do a xpath query with the given context
@@ -747,4 +739,73 @@ func Hash(h crypto.Hash, data string) []byte {
 	digest := h.New()
 	digest.Write([]byte(data))
 	return digest.Sum(nil)
+}
+
+func walk(n types.Node, level int) (pp string) {
+	indent := "                                                            "[0 : level*4]
+	level++
+	switch n := n.(type) {
+	case types.Element:
+		tag := n.NodeName()
+		attrs := []string{}
+		namespaces, _ := n.GetNamespaces()
+		for _, ns := range namespaces {
+			attrs = append(attrs, "xmlns:"+ns.Prefix()+":\""+ns.URI()+"\"")
+		}
+
+		attributes, _ := n.Attributes()
+		for _, ats := range attributes {
+			attrs = append(attrs, strings.TrimSpace(ats.String()))
+		}
+		l := len(attrs)
+		x := ""
+		if l == 0 {
+			//x = ">"
+		} else if l > 0 {
+			x = " " + attrs[0]
+			attrs = attrs[1:]
+			if l == 1 {
+				//x += ">"
+			}
+			l--
+		}
+
+		pp = fmt.Sprintf("%s<%s%s", indent, tag, x)
+		x = ""
+		for i, attr := range attrs {
+			indent := "                                                            "[0 : level*4-2+len(tag)]
+			newline1 := "\n"
+			if i == l-1 {
+				//x = ">"
+				newline1 = ""
+			}
+			newline := ""
+			if i == 0 {
+				newline = "\n"
+			}
+			pp += fmt.Sprintf("%s%s%s%s%s", newline, indent, attr, x, newline1)
+		}
+		children, _ := n.ChildNodes()
+		elements := false
+		subpp := ""
+		for _, c := range children {
+			_, ok := c.(types.Element)
+			elements = elements || ok
+			subpp += walk(c, level)
+		}
+		if elements {
+			pp += ">\n" + subpp + fmt.Sprintf("%s</%s>\n", indent, n.NodeName())
+		} else {
+		    if subpp == "" {
+		        pp += "/>\n"
+		    } else {
+    			pp += ">"+subpp + fmt.Sprintf("</%s>\n", n.NodeName())
+    		}
+		}
+	case types.Node:
+		if txt := strings.TrimSpace(n.TextContent()); txt != "" {
+			pp = txt
+		}
+	}
+	return
 }
