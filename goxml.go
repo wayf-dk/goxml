@@ -768,7 +768,7 @@ func walk(n types.Node, level int) (pp string) {
 			l--
 		}
 
-		pp = fmt.Sprintf("%*s<%s%s", level*4, "",  tag, x)
+		pp = fmt.Sprintf("%*s<%s%s", level*4, "", tag, x)
 		x = ""
 		for i, attr := range attrs {
 			newline1 := "\n"
