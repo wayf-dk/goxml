@@ -213,6 +213,14 @@ func (xp *Xp) QueryNumber(context types.Element, path string) (val int) {
 	return int(xpath.Number(xp.Xpath.Find(path)))
 }
 
+// QueryString evaluates an xpath expressions that returns a string
+func (xp *Xp) QueryString(context types.Element, path string) (val string) {
+	if context != nil {
+		xp.Xpath.SetContextNode(context)
+	}
+	return string(xpath.String(xp.Xpath.Find(path)))
+}
+
 // QueryNumber evaluates an xpath expressions that returns a bool
 func (xp *Xp) QueryBool(context types.Element, path string) bool {
 	if context != nil {
@@ -768,7 +776,7 @@ func walk(n types.Node, level int) (pp string) {
 			l--
 		}
 
-		pp = fmt.Sprintf("%*s<%s%s", level*4, "", tag, x)
+		pp = fmt.Sprintf("%*s<%s%s", level*4, "",  tag, x)
 		x = ""
 		for i, attr := range attrs {
 			newline1 := "\n"
