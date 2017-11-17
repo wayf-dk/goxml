@@ -742,8 +742,6 @@ func Hash(h crypto.Hash, data string) []byte {
 }
 
 func walk(n types.Node, level int) (pp string) {
-	indent := "                                                            "[0 : level*4]
-	level++
 	switch n := n.(type) {
 	case types.Element:
 		tag := n.NodeName()
@@ -770,10 +768,9 @@ func walk(n types.Node, level int) (pp string) {
 			l--
 		}
 
-		pp = fmt.Sprintf("%s<%s%s", indent, tag, x)
+		pp = fmt.Sprintf("%*s<%s%s", level*4, "",  tag, x)
 		x = ""
 		for i, attr := range attrs {
-			indent := "                                                            "[0 : level*4-2+len(tag)]
 			newline1 := "\n"
 			if i == l-1 {
 				//x = ">"
@@ -783,7 +780,7 @@ func walk(n types.Node, level int) (pp string) {
 			if i == 0 {
 				newline = "\n"
 			}
-			pp += fmt.Sprintf("%s%s%s%s%s", newline, indent, attr, x, newline1)
+			pp += fmt.Sprintf("%s%*s%s%s%s", newline, level*4+2+len(tag), "", attr, x, newline1)
 		}
 		children, _ := n.ChildNodes()
 		elements := false
@@ -791,16 +788,16 @@ func walk(n types.Node, level int) (pp string) {
 		for _, c := range children {
 			_, ok := c.(types.Element)
 			elements = elements || ok
-			subpp += walk(c, level)
+			subpp += walk(c, level+1)
 		}
 		if elements {
-			pp += ">\n" + subpp + fmt.Sprintf("%s</%s>\n", indent, n.NodeName())
+			pp += fmt.Sprintf(">\n%s%*s</%s>\n", subpp, level*4, "", n.NodeName())
 		} else {
-		    if subpp == "" {
-		        pp += "/>\n"
-		    } else {
-    			pp += ">"+subpp + fmt.Sprintf("</%s>\n", n.NodeName())
-    		}
+			if subpp == "" {
+				pp += "/>\n"
+			} else {
+				pp += fmt.Sprintf(">\n%*s%s\n%*s</%s>\n", level*5, "", subpp, level*4, "", n.NodeName())
+			}
 		}
 	case types.Node:
 		if txt := strings.TrimSpace(n.TextContent()); txt != "" {
