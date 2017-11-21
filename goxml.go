@@ -428,7 +428,6 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 	err := rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
-	fmt.Println("rsa error", err, signatureMethod)
 	return err
 }
 
@@ -570,7 +569,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) *Xp {
+func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -633,7 +632,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) *Xp {
 	sessionkey, err := rsa.DecryptOAEP2(digestAlgorithm.New(), mgfAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
 	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	switch len(sessionkey) {
@@ -650,7 +649,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) *Xp {
 
 	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
 
-	return NewXp(string(plaintext))
+	return NewXp(string(plaintext)), nil
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
@@ -776,7 +775,7 @@ func walk(n types.Node, level int) (pp string) {
 			l--
 		}
 
-		pp = fmt.Sprintf("%*s<%s%s", level*4, "",  tag, x)
+		pp = fmt.Sprintf("%*s<%s%s", level*4, "", tag, x)
 		x = ""
 		for i, attr := range attrs {
 			newline1 := "\n"
@@ -804,7 +803,7 @@ func walk(n types.Node, level int) (pp string) {
 			if subpp == "" {
 				pp += "/>\n"
 			} else {
-				pp += fmt.Sprintf(">\n%*s%s\n%*s</%s>\n", level*5, "", subpp, level*4, "", n.NodeName())
+				pp += fmt.Sprintf(">\n%*s%s\n%*s</%s>\n", level*8, "", subpp, level*4, "", n.NodeName())
 			}
 		}
 	case types.Node:
