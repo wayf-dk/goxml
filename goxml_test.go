@@ -655,7 +655,7 @@ func ExampleDecryptNemloginResponse() {
 	// GuWLBRb1kEiwx/86+R0RmQnI8Mw=
 }
 
-func ExampleDecrypt() { //OAEP does not support key Encryption different methods "digestMethod != keyEncryptionMethod not supported"
+func ExampleDecrypt() { //OAEP does not support  different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
 
 	tests := []string{
 		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
@@ -696,7 +696,7 @@ func ExampleDecrypt() { //OAEP does not support key Encryption different methods
 
 		if decrypted != nil {
 			printHashedDom(decrypted)
-		}else{
+		} else {
 			fmt.Println(decrypted)
 		}
 	}
