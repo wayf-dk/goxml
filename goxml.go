@@ -808,7 +808,11 @@ func walk(n types.Node, level int) (pp string) {
 		attrs := []string{}
 		namespaces, _ := n.GetNamespaces()
 		for _, ns := range namespaces {
-			attrs = append(attrs, "xmlns:"+ns.Prefix()+":\""+ns.URI()+"\"")
+			prefix := "xmlns"
+			if ns.Prefix() != "" {
+				prefix = prefix + ":" + ns.Prefix()
+			}
+			attrs = append(attrs, prefix+"=\""+ns.URI()+"\"")
 		}
 
 		attributes, _ := n.Attributes()
@@ -856,7 +860,7 @@ func walk(n types.Node, level int) (pp string) {
 			if subpp == "" {
 				pp += "/>\n"
 			} else {
-				pp += fmt.Sprintf(">\n%*s%s\n%*s</%s>\n", level*8, "", subpp, level*4, "", n.NodeName())
+				pp += fmt.Sprintf(">\n%*s%s\n%*s</%s>\n", level*5, "", subpp, level*4, "", n.NodeName())
 			}
 		}
 	case types.Node:
