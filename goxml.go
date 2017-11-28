@@ -28,6 +28,7 @@ import (
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
+	"runtime"
 	//  . "github.com/y0ssar1an/q"
 )
 
@@ -50,6 +51,12 @@ type (
 		Signature string
 		Algo      crypto.Hash
 		derprefix string
+	}
+
+	Werror struct {
+		C     []string
+		PC    []uintptr `json:"-"`
+		Cause error
 	}
 )
 
@@ -100,6 +107,51 @@ func init() {
 		Algos[a.digest] = algo{"", "", a.Algo, a.derprefix}
 		Algos[a.Signature] = algo{"", "", a.Algo, a.derprefix}
 	}
+}
+
+func New(ctx ...string) Werror {
+	x := Werror{C: ctx}
+	x.PC = make([]uintptr, 32)
+	n := runtime.Callers(2, x.PC)
+	x.PC = x.PC[:n]
+	return x
+}
+
+func Wrap(err error, ctx ...string) error {
+	switch x := err.(type) {
+	case Werror:
+		x.C = append(x.C, ctx...)
+		return x
+	default:
+		werr := New("cause:" + err.Error())
+		werr.Cause = err
+		return Wrap(werr, ctx...)
+	}
+	return err
+}
+
+func (e Werror) Error() (err string) {
+	errjson, _ := json.Marshal(e.C)
+	err = string(errjson)
+	return
+}
+
+func (e Werror) Stack(depth int) (st string) {
+	n := len(e.PC)
+	if n > 0 && depth < n {
+		pcs := e.PC[:n-depth]
+		frames := runtime.CallersFrames(pcs)
+		for {
+			frame, more := frames.Next()
+			function := frame.Function
+			file := strings.Split(frame.File, "/")
+			st += fmt.Sprintf(" %s %s %d\n", function, file[len(file)-1:][0], frame.Line)
+			if !more {
+				break
+			}
+		}
+	}
+	return
 }
 
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
