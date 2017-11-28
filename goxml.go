@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -682,7 +683,11 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 		log.Panic(err)
 	}
 
-	sessionkey, err := rsa.DecryptOAEP2(digestAlgorithm.New(), mgfAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
+	if digestAlgorithm != mgfAlgorithm {
+		return nil, errors.New("digestMethod != keyEncryptionMethod not supported")
+	}
+
+	sessionkey, err := rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
 	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
 	if err != nil {
 		return nil, err
