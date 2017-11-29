@@ -46,14 +46,14 @@ func printHashedDom(xp *Xp) {
 	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp.C14n(nil, ""))))
 }
 
-func ExampleCpXp(){
+func ExampleCpXp() {
 	xp := xpFromFile("testdata/response.xml")
 	printHashedDom(xp)
 	// Output:
 	// 8fqgdCA2D9Ywkf/OOzIwQRmbXTM=
 }
 
-func ExampleAddXPathContext(){
+func ExampleAddXPathContext() {
 	xp := xpFromFile("testdata/response.xml")
 	xp.addXPathContext()
 	// Output:
@@ -696,7 +696,7 @@ func ExampleDecrypt() { //OAEP does not support key Encryption different methods
 
 		if decrypted != nil {
 			printHashedDom(decrypted)
-		}else{
+		} else {
 			fmt.Println(decrypted)
 		}
 	}
