@@ -184,14 +184,13 @@ func NewXpFromString(xml string) *Xp {
 	return x
 }
 
-func NewXpFromFile(file string) (*Xp) {
+func NewXpFromFile(file string) *Xp {
 	xml, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Panic(err)
 	}
 	return NewXp(xml)
 }
-
 
 // Make a copy of the Xp object - shares the document with the source, but allocates a new xmlXPathContext because
 // they are not thread/gorutine safe as the context is set for each query call
@@ -296,7 +295,7 @@ func (xp *Xp) QueryString(context types.Element, path string) (val string) {
 	if context != nil {
 		xp.Xpath.SetContextNode(context)
 	}
-	return string(xpath.String(xp.Xpath.Find(path)))
+	return xpath.String(xp.Xpath.Find(path))
 }
 
 // QueryNumber evaluates an xpath expressions that returns a bool
@@ -436,7 +435,7 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 // Sign the given context with the given private key - which is a PEM or hsm: key
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
 // See https://github.com/wayf-dk/goeleven
-func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo string) (err error) {
+func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, algo string) (err error) {
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
@@ -455,7 +454,7 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw, cert, algo str
 	digest := Hash(Algos[algo].Algo, signedInfoC14n)
 
 	var signaturevalue []byte
-	if strings.HasPrefix(privatekey, "hsm:") {
+	if bytes.HasPrefix(privatekey, []byte("hsm:")) {
 		signaturevalue, err = SignGoEleven(digest, privatekey, algo)
 	} else {
 		signaturevalue, err = SignGo(digest, privatekey, pw, algo)
@@ -509,11 +508,11 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	return err
 }
 
-func SignGo(digest []byte, privatekey, pw, algo string) (signaturevalue []byte, err error) {
+func SignGo(digest []byte, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 	var priv *rsa.PrivateKey
-	block, _ := pem.Decode([]byte(privatekey))
-	if pw != "-" {
-		privbytes, _ := x509.DecryptPEMBlock(block, []byte(pw))
+	block, _ := pem.Decode(privatekey)
+	if string(pw) != "-" {
+		privbytes, _ := x509.DecryptPEMBlock(block, pw)
 		priv, err = x509.ParsePKCS1PrivateKey(privbytes)
 	} else {
 		priv, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -525,12 +524,12 @@ func SignGo(digest []byte, privatekey, pw, algo string) (signaturevalue []byte, 
 	return
 }
 
-func SignGoEleven(digest []byte, privatekey, algo string) (signaturevalue []byte, err error) {
+func SignGoEleven(digest, privatekey []byte, algo string) (signaturevalue []byte, err error) {
 
 	type req struct {
 		Data      string `json:"data"`
 		Mech      string `json:"mech"`
-		Sharedkey string `json:"sharedkey"`
+		Sharedkey []byte `json:"sharedkey"`
 	}
 
 	var res struct {
@@ -539,7 +538,7 @@ func SignGoEleven(digest []byte, privatekey, algo string) (signaturevalue []byte
 		Signed []byte `json:"signed"`
 	}
 
-	parts := strings.SplitN(privatekey, ":", 3)
+	parts := bytes.SplitN(privatekey, []byte(":"), 3)
 
 	payload := req{
 		Data:      base64.StdEncoding.EncodeToString(append([]byte(Algos[algo].derprefix), digest...)),
@@ -549,7 +548,7 @@ func SignGoEleven(digest []byte, privatekey, algo string) (signaturevalue []byte
 
 	jsontxt, err := json.Marshal(payload)
 
-	resp, err := http.Post(parts[2], "application/json", bytes.NewBuffer(jsontxt))
+	resp, err := http.Post(string(parts[2]), "application/json", bytes.NewBuffer(jsontxt))
 	if err != nil {
 		return
 	}

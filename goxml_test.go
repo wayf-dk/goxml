@@ -139,25 +139,24 @@ func ExampleSignAndValidate() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm"))
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:SignatureMethod/@Algorithm"))
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha1")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha1")
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
 	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm"))
@@ -182,12 +181,11 @@ func ExampleXSW1() {
 	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	clonedResponse, _ := response.Copy()
 	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
@@ -198,7 +196,7 @@ func ExampleXSW1() {
 
 	response = xp.Query(nil, "/samlp:Response[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -212,12 +210,11 @@ func ExampleXSW2() {
 	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(response.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	clonedResponse, _ := response.Copy()
 	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
@@ -228,7 +225,7 @@ func ExampleXSW2() {
 
 	response = xp.Query(nil, "/samlp:Response[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -242,12 +239,11 @@ func ExampleXSW3() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	evilAssertion, _ := assertion.Copy()
 	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -257,7 +253,7 @@ func ExampleXSW3() {
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -271,12 +267,11 @@ func ExampleXSW4() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	evilAssertion, _ := assertion.Copy()
 	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -290,7 +285,7 @@ func ExampleXSW4() {
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -304,12 +299,11 @@ func ExampleXSW5() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	assertionCopy, _ := evilAssertion.Copy()
@@ -322,7 +316,7 @@ func ExampleXSW5() {
 	evilAssertion.(types.Element).SetAttribute("ID", "_evil_response_ID")
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -336,12 +330,11 @@ func ExampleXSW6() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -353,7 +346,7 @@ func ExampleXSW6() {
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -367,12 +360,11 @@ func ExampleXSW7() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	extensions, _ := xp.Doc.CreateElement("Extensions")
 	assertion.AddPrevSibling(extensions)
@@ -383,7 +375,7 @@ func ExampleXSW7() {
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -397,12 +389,11 @@ func ExampleXSW8() {
 	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, "-", "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -415,7 +406,7 @@ func ExampleXSW8() {
 
 	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := &priv.PublicKey
 
@@ -567,7 +558,7 @@ func ExampleDecryptShibResponse() {
 	if err != nil {
 		log.Panic(err)
 	}
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 
 	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
@@ -606,7 +597,7 @@ func ExampleDecryptNemloginResponse() {
 	if err != nil {
 		log.Panic(err)
 	}
-	block, _ := pem.Decode([]byte(privatekey))
+	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 
 	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
