@@ -289,7 +289,7 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	nodes := xp.Query(context, path)
 
 	for _, node := range nodes {
-		res = append(res, node.NodeValue())
+		res = append(res, strings.TrimSpace(node.NodeValue()))
 	}
 	return
 }
