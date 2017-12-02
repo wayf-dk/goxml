@@ -33,42 +33,33 @@ var (
 	_ = log.Printf // For debugging; delete when done.
 )
 
-func xpFromFile(file string) (res *Xp) {
-	xml, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Panic(err)
-	}
-	res = NewXp(string(xml))
-	return
-}
-
 func printHashedDom(xp *Xp) {
 	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp.C14n(nil, ""))))
 }
 
 func ExampleCpXp() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	printHashedDom(xp)
 	// Output:
 	// 8fqgdCA2D9Ywkf/OOzIwQRmbXTM=
 }
 
 func ExampleAddXPathContext() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	xp.addXPathContext()
 	// Output:
 	//
 }
 
 /*func ExampleInvalidDoc(){
-	xp := xpFromFile("testdata/invaliddoc.xml")
+	xp := NewXpFromFile("testdata/invaliddoc.xml")
 	fmt.Println(xp)
 	// Output:
 	//Invalid Document
 }*/
 
 func ExampleQueryAllNodes() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	xp_res := xp.Query(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute`)
 	fmt.Println(xp_res)
 	// Output:
@@ -76,7 +67,7 @@ func ExampleQueryAllNodes() {
 }
 
 func ExampleQueryAllNodeValues() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	xp_res := xp.Query(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
 	fmt.Println(xp_res)
 	// Output:
@@ -84,7 +75,7 @@ func ExampleQueryAllNodeValues() {
 }
 
 func ExampleQueryNumber() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	count := xp.QueryNumber(nil, `count(./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue)`)
 	fmt.Println("count", count)
 	// Output:
@@ -92,7 +83,7 @@ func ExampleQueryNumber() {
 }
 
 func ExampleQueryBool() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	boolean := xp.QueryBool(nil, `count(./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue) > 10`)
 	fmt.Println("count", boolean)
 	// Output:
@@ -100,7 +91,7 @@ func ExampleQueryBool() {
 }
 
 func ExampleNewXpFromNode() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	node := xp.Query(nil, `./saml:Assertion`)[0]
 	xp_res := NewXpFromNode(node)
 	printHashedDom(xp_res)
@@ -109,7 +100,7 @@ func ExampleNewXpFromNode() {
 }
 
 func ExampleQueryMulti() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	xp_res := xp.QueryMulti(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
 	fmt.Println(xp_res)
 	// Output:
@@ -117,14 +108,14 @@ func ExampleQueryMulti() {
 }
 
 func ExampleEmptyDoc() {
-	xp := xpFromFile("testdata/emptydoc.xml")
+	xp := NewXpFromFile("testdata/emptydoc.xml")
 	fmt.Println(xp.Doc.Dump(false))
 	// Output:
 	// <?xml version="1.0" encoding="UTF-8"?>
 }
 
 func ExampleExternalEntity() {
-	xp := xpFromFile("testdata/externalentity.xml")
+	xp := NewXpFromFile("testdata/externalentity.xml")
 	fmt.Println(xp.Doc.Dump(false))
 	// Output:
 	// <?xml version="1.0" encoding="UTF-8"?>
@@ -138,14 +129,14 @@ func ExampleExternalEntity() {
 }
 
 func ExampleValidDoc() {
-	xp := xpFromFile("testdata/validdoc.xml")
+	xp := NewXpFromFile("testdata/validdoc.xml")
 	printHashedDom(xp)
 	// Output:
 	// GKAdV32WvPN3sv6a+mSV4bSnZ14=
 }
 
 func ExampleSignAndValidate() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -188,7 +179,7 @@ func ExampleSignAndValidate() {
 }
 
 func ExampleXSW1() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -218,7 +209,7 @@ func ExampleXSW1() {
 }
 
 func ExampleXSW2() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	before := xp.Query(response, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -248,7 +239,7 @@ func ExampleXSW2() {
 }
 
 func ExampleXSW3() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -277,7 +268,7 @@ func ExampleXSW3() {
 }
 
 func ExampleXSW4() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -310,7 +301,7 @@ func ExampleXSW4() {
 }
 
 func ExampleXSW5() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -342,7 +333,7 @@ func ExampleXSW5() {
 }
 
 func ExampleXSW6() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -373,7 +364,7 @@ func ExampleXSW6() {
 }
 
 func ExampleXSW7() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -403,7 +394,7 @@ func ExampleXSW7() {
 }
 
 func ExampleXSW8() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	before := xp.Query(assertion, "*[2]")[0]
 	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
@@ -435,7 +426,7 @@ func ExampleXSW8() {
 }
 
 func ExampleQueryDashP_1() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]`, "anton", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]`, "joe", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
@@ -453,7 +444,7 @@ func ExampleQueryDashP_1() {
 }
 
 func ExampleQueryDashP_2() {
-	xp := NewXp(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
+	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
 	xp.QueryDashP(nil, `/samlp:Response/@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
 
@@ -477,7 +468,7 @@ func ExampleQueryDashP_2() {
 }
 
 func ExampleQueryDashP_3() {
-	xp := NewXp(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
+	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
 	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
 
@@ -501,7 +492,7 @@ func ExampleQueryDashP_3() {
 
 func ExampleEncryptAndDecrypt() {
 
-	xp := NewXp(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
+	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
 	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
 
@@ -515,7 +506,7 @@ func ExampleEncryptAndDecrypt() {
 	privatekey := string(pkey)
 
 	pk := Pem2PrivateKey(privatekey, "")
-	ea := NewXp(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
+	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
 	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
 
 	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
@@ -556,7 +547,7 @@ func ExampleEncryptAndDecrypt() {
 }
 
 func ExampleValidateSchema() {
-	xp := xpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
 	// make the document schema-invalid
 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
@@ -570,11 +561,7 @@ func ExampleValidateSchema() {
 }
 
 func ExampleDecryptShibResponse() {
-	xml, err := ioutil.ReadFile("testdata/testshib.org.encryptedresponse.xml")
-	if err != nil {
-		log.Panic(err)
-	}
-	shibresponse := NewXp(string(xml))
+	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
 
 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
@@ -613,12 +600,7 @@ func ExampleDecryptShibResponse() {
 }
 
 func ExampleDecryptNemloginResponse() {
-
-	xml, err := ioutil.ReadFile("testdata/nemlogin.encryptedresponse.xml")
-	if err != nil {
-		log.Panic(err)
-	}
-	nemloginresponse := NewXp(string(xml))
+	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
 
 	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
 	if err != nil {
@@ -673,7 +655,7 @@ func ExampleDecrypt() { //OAEP does not support  different key Encryption method
 		pemBlock, _ := ioutil.ReadFile(pemFile)
 		block, _ := pem.Decode(pemBlock)
 		pKey, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-		xp := NewXp("<dummy>" + string(cipherText) + "</dummy>")
+		xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
 		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
 		decrypted, err := xp.Decrypt(encryptedData.(types.Element), pKey)
@@ -682,7 +664,7 @@ func ExampleDecrypt() { //OAEP does not support  different key Encryption method
 			pemBlock, _ := ioutil.ReadFile(pemFile)
 			block, _ := pem.Decode(pemBlock)
 			pKey, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-			xp := NewXp("<dummy>" + string(cipherText) + "</dummy>")
+			xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
 			encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
 			decrypted, err = xp.Decrypt(encryptedData.(types.Element), pKey)

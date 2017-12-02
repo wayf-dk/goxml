@@ -156,7 +156,22 @@ func (e Werror) Stack(depth int) (st string) {
 }
 
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
-func NewXp(xml string) *Xp {
+func NewXp(xml []byte) *Xp {
+	x := new(Xp)
+	if len(xml) == 0 {
+		x.Doc = dom.NewDocument("1.0", "")
+	} else {
+		doc, _ := libxml2.Parse(xml, 0)
+		//doc, _ := libxml2.ParseString(xml, 0)
+		x.Doc = doc.(*dom.Document)
+	}
+
+	x.addXPathContext()
+	return x
+}
+
+// Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
+func NewXpFromString(xml string) *Xp {
 	x := new(Xp)
 	if len(xml) == 0 {
 		x.Doc = dom.NewDocument("1.0", "")
@@ -168,6 +183,15 @@ func NewXp(xml string) *Xp {
 	x.addXPathContext()
 	return x
 }
+
+func NewXpFromFile(file string) (*Xp) {
+	xml, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Panic(err)
+	}
+	return NewXp(xml)
+}
+
 
 // Make a copy of the Xp object - shares the document with the source, but allocates a new xmlXPathContext because
 // they are not thread/gorutine safe as the context is set for each query call
@@ -191,7 +215,7 @@ func (xp *Xp) addXPathContext() {
 
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
 func NewXpFromNode(node types.Node) *Xp {
-	xp := NewXp("")
+	xp := NewXp([]byte{})
 	newnode, _ := node.Copy()
 	xp.Doc.SetDocumentElement(newnode)
 	return xp
@@ -199,12 +223,12 @@ func NewXpFromNode(node types.Node) *Xp {
 
 // Parse html object with doc - used in testing for "forwarding" samlresponses from html to http
 // Disables error reporting - libxml2 complains about html5 elements
-func NewHtmlXp(html string) *Xp {
+func NewHtmlXp(html []byte) *Xp {
 	x := new(Xp)
 	if len(html) == 0 {
 		x.Doc = dom.NewDocument("1.0", "")
 	} else {
-		doc, _ := libxml2.ParseHTMLString(html)
+		doc, _ := libxml2.ParseHTML(html)
 		x.Doc = doc.(*dom.Document)
 	}
 	// to-do look into making the namespaces map come from the client
@@ -707,7 +731,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 
 	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
 
-	return NewXp(string(plaintext)), nil
+	return NewXp(plaintext), nil
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
