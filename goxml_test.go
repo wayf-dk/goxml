@@ -490,13 +490,12 @@ func ExampleEncryptAndDecrypt() {
 	fmt.Print(xp.Doc.Dump(true))
 
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	pkey, err := ioutil.ReadFile("testdata/private.key.pem")
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
-	privatekey := string(pkey)
 
-	pk := Pem2PrivateKey(privatekey, "")
+	pk := Pem2PrivateKey(privatekey, []byte{})
 	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
 	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
 
