@@ -453,12 +453,7 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, a
 	signedInfoC14n := xp.C14n(signedInfo, "")
 	digest := Hash(Algos[algo].Algo, signedInfoC14n)
 
-	var signaturevalue []byte
-	if bytes.HasPrefix(privatekey, []byte("hsm:")) {
-		signaturevalue, err = SignGoEleven(digest, privatekey, algo)
-	} else {
-		signaturevalue, err = SignGo(digest, privatekey, pw, algo)
-	}
+	signaturevalue, err := Sign(digest, privatekey, pw, algo)
 	if err != nil {
 		return
 	}
@@ -508,7 +503,13 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	return err
 }
 
-func SignGo(digest []byte, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
+func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
+	signFuncs := map[bool]func([]byte, []byte, []byte, string) ([]byte, error){true: signGoEleven, false: signGo}
+	signaturevalue, err = signFuncs[bytes.HasPrefix(privatekey, []byte("hsm:"))](digest, privatekey, pw, algo)
+	return
+}
+
+func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 	var priv *rsa.PrivateKey
 	block, _ := pem.Decode(privatekey)
 	if string(pw) != "-" {
@@ -524,7 +525,7 @@ func SignGo(digest []byte, privatekey, pw []byte, algo string) (signaturevalue [
 	return
 }
 
-func SignGoEleven(digest, privatekey []byte, algo string) (signaturevalue []byte, err error) {
+func signGoEleven(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 
 	type req struct {
 		Data      string `json:"data"`
@@ -734,10 +735,10 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
-func Pem2PrivateKey(privatekeypem, pw string) (privatekey *rsa.PrivateKey) {
-	block, _ := pem.Decode([]byte(privatekeypem))
-	if pw != "" {
-		privbytes, _ := x509.DecryptPEMBlock(block, []byte(pw))
+func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey) {
+	block, _ := pem.Decode(privatekeypem)
+	if string(pw) != "" {
+		privbytes, _ := x509.DecryptPEMBlock(block, pw)
 		privatekey, _ = x509.ParsePKCS1PrivateKey(privbytes)
 	} else {
 		privatekey, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -825,7 +826,7 @@ func decryptCBC(key, ciphertext []byte) (plaintext []byte) {
 // Hash Perform a digest calculation using the given crypto.Hash
 func Hash(h crypto.Hash, data string) []byte {
 	digest := h.New()
-	digest.Write([]byte(data))
+	io.WriteString(digest, data)
 	return digest.Sum(nil)
 }
 
