@@ -343,7 +343,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		buffer.WriteString(path[0][1])
 		path[0][1] = buffer.String()
 	}
-
 	for _, elements := range path {
 		element := elements[1]
 		attrContext = nil
