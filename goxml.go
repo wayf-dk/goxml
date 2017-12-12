@@ -30,10 +30,13 @@ import (
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
 	"runtime"
-	//  . "github.com/y0ssar1an/q"
+	"github.com/y0ssar1an/q"
 )
 
-var _ = log.Printf // For debugging; delete when done.
+var (
+    _ = log.Printf // For debugging; delete when done.
+    _ = q.Q
+)
 
 type (
 
@@ -511,8 +514,14 @@ func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, er
 func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 	var priv *rsa.PrivateKey
 	block, _ := pem.Decode(privatekey)
+    if block == nil {
+        return nil, New("errmsg:PEM decode")
+    }
 	if string(pw) != "-" {
-		privbytes, _ := x509.DecryptPEMBlock(block, pw)
+		privbytes, err := x509.DecryptPEMBlock(block, pw)
+        if err != nil {
+            return nil, Wrap(err, "errmsg:Password error")
+        }
 		priv, err = x509.ParsePKCS1PrivateKey(privbytes)
 	} else {
 		priv, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -725,7 +734,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
 	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
