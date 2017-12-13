@@ -29,13 +29,13 @@ import (
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
-	"runtime"
 	"github.com/y0ssar1an/q"
+	"runtime"
 )
 
 var (
-    _ = log.Printf // For debugging; delete when done.
-    _ = q.Q
+	_ = log.Printf // For debugging; delete when done.
+	_ = q.Q
 )
 
 type (
@@ -113,7 +113,12 @@ func init() {
 	}
 }
 
-func New(ctx ...string) Werror {
+/**
+  Werror allows us to make error that are list of semistructured messages "tag: message" to
+  allow for textual error messages that can be interpreted by a program.
+*/
+
+func NewWerror(ctx ...string) Werror {
 	x := Werror{C: ctx}
 	x.PC = make([]uintptr, 32)
 	n := runtime.Callers(2, x.PC)
@@ -127,7 +132,7 @@ func Wrap(err error, ctx ...string) error {
 		x.C = append(x.C, ctx...)
 		return x
 	default:
-		werr := New("cause:" + err.Error())
+		werr := NewWerror("cause:" + err.Error())
 		werr.Cause = err
 		return Wrap(werr, ctx...)
 	}
@@ -271,7 +276,11 @@ func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
 
 func (xp *Xp) PP() string {
 	root, _ := xp.Doc.DocumentElement()
-	return walk(root, 0)
+	return xp.PPE(root)
+}
+
+func (xp *Xp) PPE(element types.Node) string {
+	return walk(element, 0)
 }
 
 // Query Do a xpath query with the given context
@@ -514,14 +523,14 @@ func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, er
 func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 	var priv *rsa.PrivateKey
 	block, _ := pem.Decode(privatekey)
-    if block == nil {
-        return nil, New("errmsg:PEM decode")
-    }
+	if block == nil {
+		return nil, NewWerror("errmsg:PEM decode")
+	}
 	if string(pw) != "-" {
 		privbytes, err := x509.DecryptPEMBlock(block, pw)
-        if err != nil {
-            return nil, Wrap(err, "errmsg:Password error")
-        }
+		if err != nil {
+			return nil, Wrap(err, "errmsg:Password error")
+		}
 		priv, err = x509.ParsePKCS1PrivateKey(privbytes)
 	} else {
 		priv, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -631,16 +640,19 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) (signaturevalue []
 // Encrypt the context with the given publickey
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
-func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
+func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (err error) {
 	ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
 	ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
 	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
 	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
-	sessionkey, ciphertext := encryptAESCBC([]byte(context.ToString(1, true)))
-	sessionkey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
+	sessionkey, ciphertext, err := encryptAESCBC([]byte(context.ToString(1, true)))
 	if err != nil {
-		panic(err)
+		return
+	}
+	sessionkey, err = rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
+	if err != nil {
+		return
 	}
 
 	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(sessionkey), nil)
@@ -651,11 +663,12 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) {
 	//    ec, _ = ec.Copy()
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
+	return
 }
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, error) {
+func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (x *Xp, err error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -677,10 +690,10 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 		case "http://www.w3.org/2009/xmlenc11#mgf1sha256":
 			mgfAlgorithm = crypto.SHA256
 		default:
-			log.Panicf("unsupported MGF: %s", MGF)
+			return nil, NewWerror("unsupported MGF", "MGF: "+MGF)
 		}
 	default:
-		log.Panicf("unsupported keyEncryptionMethod: %s", keyEncryptionMethod)
+		return nil, NewWerror("unsupported keyEncryptionMethod", "keyEncryptionMethod: "+keyEncryptionMethod)
 	}
 
 	switch digestMethod {
@@ -693,7 +706,7 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 	case "http://www.w3.org/2001/04/xmlenc#sha512":
 		digestAlgorithm = crypto.SHA512
 	default:
-		log.Panicf("unsupported digestMethod: %s", digestMethod)
+		return nil, NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
 	}
 
 	switch encryptionMethod {
@@ -702,17 +715,17 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
 		decrypt = decryptGCM
 	default:
-		log.Panicf("unsupported encryptionMethod: %s", encryptionMethod)
+		return nil, NewWerror("unsupported encryptionMethod", "encryptionMethod: "+encryptionMethod)
 	}
 
 	encryptedKeybyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encryptedKey))
 	if err != nil {
-		log.Panic(err)
+		return
 	}
 
 	OAEPparamsbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(OAEPparams))
 	if err != nil {
-		log.Panic(err)
+		return
 	}
 
 	if digestAlgorithm != mgfAlgorithm {
@@ -722,22 +735,25 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (*Xp, e
 	sessionkey, err := rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
 	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	switch len(sessionkey) {
 	case 16, 24, 32:
 	default:
-		log.Panicf("Unsupported keylength for AES %d", len(sessionkey))
+		return nil, fmt.Errorf("Unsupported keylength for AES %d", len(sessionkey))
 	}
 
 	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
 	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	plaintext := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
+	plaintext, err := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
+	if err != nil {
+		return
+	}
 
 	return NewXp(plaintext), nil
 }
@@ -755,10 +771,10 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey) {
 }
 
 // encryptAES encrypts the plaintext with a generated random key and returns both the key and the ciphertext
-func encryptAESCBC(plaintext []byte) (key, ciphertext []byte) {
+func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 	key = make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		panic(err)
+	if _, err = io.ReadFull(rand.Reader, key); err != nil {
+		return
 	}
 	paddinglen := aes.BlockSize - len(plaintext)%aes.BlockSize
 
@@ -766,13 +782,13 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte) {
 	ciphertext = make([]byte, aes.BlockSize+len(plaintext))
 
 	iv := ciphertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		return
 	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	mode := cipher.NewCBCEncrypter(block, iv)
@@ -781,9 +797,9 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte) {
 }
 
 // decryptAES decrypts the ciphertext using the supplied key
-func decryptGCM(key, ciphertext []byte) (plaintext []byte) {
+func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
-		panic("Not enough data to decrypt for AES-GCM")
+		return nil, errors.New("Not enough data to decrypt for AES-GCM")
 	}
 
 	iv := ciphertext[:12]
@@ -791,40 +807,40 @@ func decryptGCM(key, ciphertext []byte) (plaintext []byte) {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return
 	}
 
 	plaintext, err = aesgcm.Open(nil, iv, ciphertext, nil)
 	if err != nil {
-		panic(err.Error())
+		return
 	}
 	return
 }
 
 // decryptAES decrypts the ciphertext using the supplied key
-func decryptCBC(key, ciphertext []byte) (plaintext []byte) {
+func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
 	// CBC mode always works in whole blocks.
 	if len(ciphertext)%aes.BlockSize != 0 {
-		panic("ciphertext is not a multiple of the block size")
+		return nil, errors.New("ciphertext is not a multiple of the block size")
 	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		return
 	}
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 	paddinglen := int(ciphertext[len(ciphertext)-1])
 	if paddinglen > aes.BlockSize || paddinglen == 0 {
-		panic("decrypted plaintext is not padded correctly")
+		return nil, errors.New("decrypted plaintext is not padded correctly")
 	}
 	// remove padding
 	plaintext = ciphertext[:len(ciphertext)-int(paddinglen)]
