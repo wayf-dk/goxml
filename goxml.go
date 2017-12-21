@@ -163,6 +163,15 @@ func (e Werror) Stack(depth int) (st string) {
 	return
 }
 
+func freeXp(x *Xp) {
+	//    q.Q("free", x)
+	if x.Doc.Pointer() != 0 {
+		x.Xpath.Free()
+		x.Doc.Free()
+	}
+	//    q.Q("free2", x)
+}
+
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
 func NewXp(xml []byte) *Xp {
 	x := new(Xp)
@@ -170,11 +179,12 @@ func NewXp(xml []byte) *Xp {
 		x.Doc = dom.NewDocument("1.0", "")
 	} else {
 		doc, _ := libxml2.Parse(xml, 0)
-		//doc, _ := libxml2.ParseString(xml, 0)
 		x.Doc = doc.(*dom.Document)
 	}
 
 	x.addXPathContext()
+	runtime.SetFinalizer(x, freeXp)
+	//    q.Q("Newxp", x, NewWerror("Newxp").Stack(0))
 	return x
 }
 
@@ -189,6 +199,8 @@ func NewXpFromString(xml string) *Xp {
 	}
 
 	x.addXPathContext()
+	runtime.SetFinalizer(x, freeXp)
+	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
 	return x
 }
 
@@ -238,7 +250,9 @@ func NewHtmlXp(html []byte) *Xp {
 		x.Doc = doc.(*dom.Document)
 	}
 	// to-do look into making the namespaces map come from the client
+	runtime.SetFinalizer(x, freeXp)
 	x.addXPathContext()
+	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
 	return x
 }
 
@@ -285,8 +299,7 @@ func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 		context, _ = xp.Doc.DocumentElement()
 	}
 	xp.Xpath.SetContextNode(context)
-	res, err := xp.Xpath.Find(path)
-	return xpath.NodeList(res, err)
+	return xpath.NodeList(xp.Xpath.Find(path))
 }
 
 // QueryNumber evaluates an xpath expressions that returns a number
@@ -354,6 +367,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		element := elements[1]
 		attrContext = nil
 		nodes := xp.Query(context, element)
+		//		q.Q(nodes, elements)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
@@ -386,11 +400,15 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				context.(types.Element).SetAttribute(attribute, value)
 				ctx, _ := context.(types.Element).GetAttribute(attribute)
 				attrContext = ctx.(types.Node)
+				//defer attrContext.Free()
 			}
 		}
 	}
 	// adding the provided value always at end ..
 	if data != "" {
+		if data == "\x1b" {
+			data = ""
+		}
 		if attrContext != nil {
 			attrContext.SetNodeValue(html.EscapeString(data))
 		} else {
@@ -403,6 +421,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 // CreateElementNS Create an element with the given namespace
 func (xp *Xp) createElementNS(prefix, element string, context types.Node, before types.Node) (newcontext types.Element) {
 
+	//    q.Q(context, xp.PPE(context))
 	newcontext, _ = xp.Doc.CreateElementNS(Namespaces[prefix], prefix+":"+element)
 
 	if before != nil {
