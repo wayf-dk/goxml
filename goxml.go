@@ -163,6 +163,15 @@ func (e Werror) Stack(depth int) (st string) {
 	return
 }
 
+func freeXp(x *Xp) {
+	//    q.Q("free", x)
+	if x.Doc.Pointer() != 0 {
+		x.Xpath.Free()
+		x.Doc.Free()
+	}
+	//    q.Q("free2", x)
+}
+
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
 func NewXp(xml []byte) *Xp {
 	x := new(Xp)
@@ -170,11 +179,12 @@ func NewXp(xml []byte) *Xp {
 		x.Doc = dom.NewDocument("1.0", "")
 	} else {
 		doc, _ := libxml2.Parse(xml, 0)
-		//doc, _ := libxml2.ParseString(xml, 0)
 		x.Doc = doc.(*dom.Document)
 	}
 
 	x.addXPathContext()
+	runtime.SetFinalizer(x, freeXp)
+	//    q.Q("Newxp", x, NewWerror("Newxp").Stack(0))
 	return x
 }
 
@@ -189,6 +199,8 @@ func NewXpFromString(xml string) *Xp {
 	}
 
 	x.addXPathContext()
+	runtime.SetFinalizer(x, freeXp)
+	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
 	return x
 }
 
@@ -238,7 +250,9 @@ func NewHtmlXp(html []byte) *Xp {
 		x.Doc = doc.(*dom.Document)
 	}
 	// to-do look into making the namespaces map come from the client
+	runtime.SetFinalizer(x, freeXp)
 	x.addXPathContext()
+	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
 	return x
 }
 
@@ -285,8 +299,7 @@ func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 		context, _ = xp.Doc.DocumentElement()
 	}
 	xp.Xpath.SetContextNode(context)
-	res, err := xp.Xpath.Find(path)
-	return xpath.NodeList(res, err)
+	return xpath.NodeList(xp.Xpath.Find(path))
 }
 
 // QueryNumber evaluates an xpath expressions that returns a number
@@ -354,6 +367,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		element := elements[1]
 		attrContext = nil
 		nodes := xp.Query(context, element)
+		//		q.Q(nodes, elements)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
@@ -386,11 +400,15 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				context.(types.Element).SetAttribute(attribute, value)
 				ctx, _ := context.(types.Element).GetAttribute(attribute)
 				attrContext = ctx.(types.Node)
+				//defer attrContext.Free()
 			}
 		}
 	}
 	// adding the provided value always at end ..
 	if data != "" {
+		if data == "\x1b" {
+			data = ""
+		}
 		if attrContext != nil {
 			attrContext.SetNodeValue(html.EscapeString(data))
 		} else {
@@ -403,6 +421,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 // CreateElementNS Create an element with the given namespace
 func (xp *Xp) createElementNS(prefix, element string, context types.Node, before types.Node) (newcontext types.Element) {
 
+	//    q.Q(context, xp.PPE(context))
 	newcontext, _ = xp.Doc.CreateElementNS(Namespaces[prefix], prefix+":"+element)
 
 	if before != nil {
@@ -537,100 +556,10 @@ func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, 
 	return
 }
 
-func signGoEleven(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
-
-	type req struct {
-		Data      string `json:"data"`
-		Mech      string `json:"mech"`
-		Sharedkey []byte `json:"sharedkey"`
-	}
-
-	var res struct {
-		Slot   string `json:"slot"`
-		Mech   string `json:"mech"`
-		Signed []byte `json:"signed"`
-	}
-
-	parts := bytes.SplitN(privatekey, []byte(":"), 3)
-
-	payload := req{
-		Data:      base64.StdEncoding.EncodeToString(append([]byte(Algos[algo].derprefix), digest...)),
-		Mech:      "CKM_RSA_PKCS",
-		Sharedkey: parts[1],
-	}
-
-	jsontxt, err := json.Marshal(payload)
-
-	resp, err := http.Post(string(parts[2]), "application/json", bytes.NewBuffer(jsontxt))
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-
-	err = json.Unmarshal(body, &res)
-
-	signaturevalue = res.Signed
-	return
+func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
+	data := append([]byte(Algos[algo].derprefix), digest...)
+	return callHSM("sign", data, string(privatekey), "CKM_RSA_PKCS", "")
 }
-
-/*
-   private function signHSM($data, $keyident, $algo) {
-       // we do the hashing here - the $algo int/string confusion is due to xmlseclibs
-       // openssl_sign confusingly enough accepts just the hashing algorithm
-       $hashalgo = array(OPENSSL_ALGO_SHA1 => 'sha1', 'sha1' => 'sha1', 'SHA256' => 'sha256');
-       // always just do the RSA signing - we assume that the service can do the padding/DER encoding
-       if (!key_exists($algo, $hashalgo)) {
-           return false;
-       }
-       $algo = $hashalgo[$algo];
-
-       switch ($algo) {
-           case 'sha1':
-               $t = pack('H*', '3021300906052b0e03021a05000414');
-               break;
-           case 'sha256':
-               $t = pack('H*', '3031300d060960864801650304020105000420');
-               break;
-       }
-
-       $data = $t . hash($hashalgo[$algo], $data, true);
-       return $this->callHSM('sign', $data, $keyident, 'CKM_RSA_PKCS', '');
-   }
-
-   private function decryptHSM($data, $keyident) {
-       return $this->callHSM('decrypt', $data, $keyident, 'CKM_RSA_PKCS_OAEP', 'CKM_SHA_1');
-   }
-
-   private function callHSM($function, $data, $keyident, $mech, $digest) {
-       // limit explode to 3 items - 'hsm', the sharedkey and the url, which may contain ':'s
-       list($hsm, $sharedkey, $url) = explode(':', trim($keyident), 3);
-
-       $opts = array('http' =>
-         array(
-           'method'  => 'POST',
-           'header'  => "Content-Type: application/json\r\n",
-           'content' => json_encode(array(
-               'data' => base64_encode($data),
-               'mech' => $mech,
-               'digest' => $digest,
-               'function' => $function,
-               'sharedkey' => $sharedkey,
-               )),
-           'timeout' => 2
-         )
-       );
-
-       $context  = stream_context_create($opts);
-       $res = file_get_contents($url, false, $context);
-       if ($res !== false) {
-           $res = json_decode($res, 1);
-           $res = base64_decode($res['signed']);
-       }
-       return $res;
-
-   }
-*/
 
 // Encrypt the context with the given publickey
 // Hardcoded to aes256-cbc for the symetric part and
@@ -650,12 +579,12 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 		return
 	}
 
-	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(sessionkey), nil)
-	xp.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
+	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(sessionkey), nil)
+	ee.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
 	parent, _ := context.ParentNode()
 
 	ec, _ := ee.Doc.DocumentElement()
-	//    ec, _ = ec.Copy()
+	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
 	return
@@ -663,7 +592,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (x *Xp, err error) {
+func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -727,7 +656,24 @@ func (xp *Xp) Decrypt(context types.Element, privatekey *rsa.PrivateKey) (x *Xp,
 		return nil, errors.New("digestMethod != keyEncryptionMethod not supported")
 	}
 
-	sessionkey, err := rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, privatekey, encryptedKeybyte, OAEPparamsbyte)
+	var sessionkey []byte
+	switch bytes.HasPrefix(privatekey, []byte("hsm:")) {
+	case true:
+		sessionkey, err = callHSM("decrypt", encryptedKeybyte, string(privatekey), "CKM_RSA_PKCS_OAEP", "CKM_SHA_1")
+	case false:
+		block, _ := pem.Decode(privatekey)
+		/*
+		   if pw != "-" {
+		       privbytes, _ := x509.DecryptPEMBlock(block, []byte(pw))
+		       priv, _ = x509.ParsePKCS1PrivateKey(privbytes)
+		   } else {
+		       priv, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
+		   }
+		*/
+		priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+
+		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv, encryptedKeybyte, OAEPparamsbyte)
+	}
 	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
 	if err != nil {
 		return
@@ -840,6 +786,80 @@ func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
 	// remove padding
 	plaintext = ciphertext[:len(ciphertext)-int(paddinglen)]
 	return
+}
+
+/*
+   private function signHSM($data, $keyident, $algo) {
+       // we do the hashing here - the $algo int/string confusion is due to xmlseclibs
+       // openssl_sign confusingly enough accepts just the hashing algorithm
+       $hashalgo = array(OPENSSL_ALGO_SHA1 => 'sha1', 'sha1' => 'sha1', 'SHA256' => 'sha256');
+       // always just do the RSA signing - we assume that the service can do the padding/DER encoding
+       if (!key_exists($algo, $hashalgo)) {
+           return false;
+       }
+       $algo = $hashalgo[$algo];
+
+       switch ($algo) {
+           case 'sha1':
+               $t = pack('H*', '3021300906052b0e03021a05000414');
+               break;
+           case 'sha256':
+               $t = pack('H*', '3031300d060960864801650304020105000420');
+               break;
+       }
+
+       $data = $t . hash($hashalgo[$algo], $data, true);
+       return $this->callHSM('sign', $data, $keyident, 'CKM_RSA_PKCS', '');
+   }
+
+
+
+
+   private function decryptHSM($data, $keyident) {
+       return $this->callHSM('decrypt', $data, $keyident, 'CKM_RSA_PKCS_OAEP', 'CKM_SHA_1');
+   }
+*/
+
+func callHSM(function string, data []byte, privatekey, mech, digest string) (res []byte, err error) {
+	type request struct {
+		Data      string `json:"data"`
+		Mech      string `json:"mech"`
+		Digest    string `json:"digest"`
+		Function  string `json:"function"`
+		Sharedkey string `json:"sharedkey"`
+	}
+
+	var response struct {
+		Signed []byte `json:"signed"`
+	}
+
+	parts := strings.SplitN(strings.TrimSpace(privatekey), ":", 3)
+
+	payload := request{
+		Data:      base64.StdEncoding.EncodeToString(data),
+		Mech:      mech,
+		Digest:    digest,
+		Function:  function,
+		Sharedkey: parts[1],
+	}
+
+	jsontxt, err := json.Marshal(payload)
+	if err != nil {
+		return nil, Wrap(err)
+	}
+
+	resp, err := http.Post(parts[2], "application/json", bytes.NewBuffer(jsontxt))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, Wrap(err)
+	}
+	return response.Signed, err
 }
 
 // Hash Perform a digest calculation using the given crypto.Hash
