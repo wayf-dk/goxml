@@ -91,7 +91,7 @@ func ExampleQueryBool() {
 }
 
 func ExampleNewXpFromNode() {
-	xp := NewXpFromFile("testdata/response.xml")
+    xp := NewXpFromFile("testdata/response.xml")
 	node := xp.Query(nil, `./saml:Assertion`)[0]
 	xp_res := NewXpFromNode(node)
 	printHashedDom(xp_res)

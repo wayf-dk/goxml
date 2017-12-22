@@ -223,8 +223,7 @@ func (xp *Xp) addXPathContext() {
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
 func NewXpFromNode(node types.Node) *Xp {
 	xp := NewXp([]byte{})
-	newnode, _ := node.Copy()
-	xp.Doc.SetDocumentElement(newnode)
+	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
 	return xp
 }
 
@@ -251,11 +250,7 @@ func (xp *Xp) DocGetRootElement() *types.Node {
 // to-do make go-libxml2 accept extended param
 // to-do remove it from Xp
 func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
-	doc, err := node.OwnerDocument()
-	if err != nil {
-		return nil
-	}
-	nptr, err := clib.XMLDocCopyNode(node, doc, extended)
+	nptr, err := clib.XMLDocCopyNode(node, xp.Doc, extended)
 	if err != nil {
 		return nil
 	}
