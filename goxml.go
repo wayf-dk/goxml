@@ -1,6 +1,7 @@
 package goxml
 
 import (
+	"C"
 	"bytes"
 	"crypto"
 	"crypto/aes"
@@ -31,6 +32,7 @@ import (
 	"github.com/wayf-dk/go-libxml2/xsd"
 	"github.com/y0ssar1an/q"
 	"runtime"
+	"sync"
 )
 
 var (
@@ -44,9 +46,10 @@ type (
 	// master is a pointer to the original struct with the shared
 	// xmlDoc so that is never gets deallocated before any copies
 	Xp struct {
-		Doc    *dom.Document
-		Xpath  *xpath.Context
-		master *Xp
+		Doc      *dom.Document
+		Xpath    *xpath.Context
+		master   *Xp
+		released bool
 	}
 
 	// algo xmlsec digest and signature algorith and their Go name
@@ -102,6 +105,7 @@ var (
 
 	// persistent cache of compiled schemas
 	schemaCache = make(map[string]*xsd.Schema)
+	libxml2Lock sync.Mutex
 )
 
 // init the library
@@ -163,45 +167,54 @@ func (e Werror) Stack(depth int) (st string) {
 	return
 }
 
-func freeXp(x *Xp) {
-	//    q.Q("free", x)
-	if x.Doc.Pointer() != 0 {
-		x.Xpath.Free()
-		x.Doc.Free()
+func freeXp(xp *Xp) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	if xp.released {
+		return
 	}
-	//    q.Q("free2", x)
+	//    q.Q("free", xp)
+	xp.Xpath.Free()
+	if xp.master == nil { // the Doc is shared - only Free the master
+		xp.Doc.Free()
+	}
+	xp.released = true
 }
 
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
-func NewXp(xml []byte) *Xp {
-	x := new(Xp)
+func NewXp(xml []byte) (xp *Xp) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	xp = new(Xp)
 	if len(xml) == 0 {
-		x.Doc = dom.NewDocument("1.0", "")
+		xp.Doc = dom.NewDocument("1.0", "")
 	} else {
 		doc, _ := libxml2.Parse(xml, 0)
-		x.Doc = doc.(*dom.Document)
+		xp.Doc = doc.(*dom.Document)
 	}
 
-	x.addXPathContext()
-	runtime.SetFinalizer(x, freeXp)
-	//    q.Q("Newxp", x, NewWerror("Newxp").Stack(0))
-	return x
+	xp.addXPathContext()
+	runtime.SetFinalizer(xp, freeXp)
+	//	q.Q("Newxp", xp, NewWerror("Newxp").Stack(2))
+	return
 }
 
 // Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
-func NewXpFromString(xml string) *Xp {
-	x := new(Xp)
+func NewXpFromString(xml string) (xp *Xp) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	xp = new(Xp)
 	if len(xml) == 0 {
-		x.Doc = dom.NewDocument("1.0", "")
+		xp.Doc = dom.NewDocument("1.0", "")
 	} else {
 		doc, _ := libxml2.ParseString(xml, 0)
-		x.Doc = doc.(*dom.Document)
+		xp.Doc = doc.(*dom.Document)
 	}
 
-	x.addXPathContext()
-	runtime.SetFinalizer(x, freeXp)
-	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
-	return x
+	xp.addXPathContext()
+	runtime.SetFinalizer(xp, freeXp)
+	//	q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
+	return
 }
 
 func NewXpFromFile(file string) *Xp {
@@ -221,6 +234,8 @@ func (src *Xp) CpXp() (xp *Xp) {
 	xp.Doc = src.Doc
 	xp.master = src
 	xp.addXPathContext()
+	runtime.SetFinalizer(xp, freeXp)
+	//	q.Q("cpXp", xp, NewWerror("cpXp").Stack(2))
 	return
 }
 
@@ -234,6 +249,8 @@ func (xp *Xp) addXPathContext() {
 
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
 func NewXpFromNode(node types.Node) *Xp {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	xp := NewXp([]byte{})
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
 	return xp
@@ -241,22 +258,26 @@ func NewXpFromNode(node types.Node) *Xp {
 
 // Parse html object with doc - used in testing for "forwarding" samlresponses from html to http
 // Disables error reporting - libxml2 complains about html5 elements
-func NewHtmlXp(html []byte) *Xp {
-	x := new(Xp)
+func NewHtmlXp(html []byte) (xp *Xp) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	xp = new(Xp)
 	if len(html) == 0 {
-		x.Doc = dom.NewDocument("1.0", "")
+		xp.Doc = dom.NewDocument("1.0", "")
 	} else {
 		doc, _ := libxml2.ParseHTML(html)
-		x.Doc = doc.(*dom.Document)
+		xp.Doc = doc.(*dom.Document)
 	}
 	// to-do look into making the namespaces map come from the client
-	runtime.SetFinalizer(x, freeXp)
-	x.addXPathContext()
-	//    q.Q("NewXpFromString", x, NewWerror("NewXpSromString").Stack(0))
-	return x
+	runtime.SetFinalizer(xp, freeXp)
+	xp.addXPathContext()
+	//	q.Q("NewHtmlXp", xp, NewWerror("NewHtmlXp").Stack(2))
+	return
 }
 
 func (xp *Xp) DocGetRootElement() *types.Node {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	root, _ := xp.Doc.DocumentElement()
 	return &root
 }
@@ -264,6 +285,8 @@ func (xp *Xp) DocGetRootElement() *types.Node {
 // to-do make go-libxml2 accept extended param
 // to-do remove it from Xp
 func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	nptr, err := clib.XMLDocCopyNode(node, xp.Doc, extended)
 	if err != nil {
 		return nil
@@ -275,6 +298,8 @@ func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 // C14n Canonicalise the node using the SAML specified exclusive method
 // Very slow on large documents with node != nil
 func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	s, err := clib.C14n(xp.Doc, node, nsPrefixes)
 	//	s, err := dom.C14NSerialize{Mode: dom.C14NExclusive1_0, WithComments: false}.Serialize(xp.Doc, node)
 	if err != nil {
@@ -283,18 +308,28 @@ func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
 	return
 }
 
+func (xp *Xp) Dump() []byte {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	return []byte(xp.Doc.Dump(false))
+}
+
 func (xp *Xp) PP() string {
 	root, _ := xp.Doc.DocumentElement()
 	return xp.PPE(root)
 }
 
 func (xp *Xp) PPE(element types.Node) string {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	return walk(element, 0)
 }
 
 // Query Do a xpath query with the given context
 // returns a slice of nodes
 func (xp *Xp) Query(context types.Node, path string) types.NodeList {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	if context == nil {
 		context, _ = xp.Doc.DocumentElement()
 	}
@@ -303,7 +338,9 @@ func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 }
 
 // QueryNumber evaluates an xpath expressions that returns a number
-func (xp *Xp) QueryNumber(context types.Element, path string) (val int) {
+func (xp *Xp) QueryNumber(context types.Node, path string) (val int) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	if context != nil {
 		xp.Xpath.SetContextNode(context)
 	}
@@ -311,7 +348,9 @@ func (xp *Xp) QueryNumber(context types.Element, path string) (val int) {
 }
 
 // QueryString evaluates an xpath expressions that returns a string
-func (xp *Xp) QueryString(context types.Element, path string) (val string) {
+func (xp *Xp) QueryString(context types.Node, path string) (val string) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	if context != nil {
 		xp.Xpath.SetContextNode(context)
 	}
@@ -319,7 +358,9 @@ func (xp *Xp) QueryString(context types.Element, path string) (val string) {
 }
 
 // QueryNumber evaluates an xpath expressions that returns a bool
-func (xp *Xp) QueryBool(context types.Element, path string) bool {
+func (xp *Xp) QueryBool(context types.Node, path string) bool {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	if context != nil {
 		xp.Xpath.SetContextNode(context)
 	}
@@ -330,7 +371,6 @@ func (xp *Xp) QueryBool(context types.Element, path string) bool {
 // as a slice of strings
 func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	nodes := xp.Query(context, path)
-
 	for _, node := range nodes {
 		res = append(res, strings.TrimSpace(node.NodeValue()))
 	}
@@ -367,7 +407,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		element := elements[1]
 		attrContext = nil
 		nodes := xp.Query(context, element)
-		//		q.Q(nodes, elements)
+		//q.Q(nodes, elements)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
@@ -499,6 +539,7 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
 	signedInfo := xp.Query(signature, "ds:SignedInfo")[0].(types.Element)
+
 	signedInfoC14n := xp.C14n(signedInfo, "")
 	digestValue := xp.Query1(signedInfo, "ds:Reference/ds:DigestValue")
 	ID := xp.Query1(context, "@ID")
@@ -513,6 +554,8 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
 	context.RemoveChild(signature)
+	defer signature.Free()
+
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
@@ -587,6 +630,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
+	defer context.Free()
 	return
 }
 
@@ -787,38 +831,6 @@ func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
 	plaintext = ciphertext[:len(ciphertext)-int(paddinglen)]
 	return
 }
-
-/*
-   private function signHSM($data, $keyident, $algo) {
-       // we do the hashing here - the $algo int/string confusion is due to xmlseclibs
-       // openssl_sign confusingly enough accepts just the hashing algorithm
-       $hashalgo = array(OPENSSL_ALGO_SHA1 => 'sha1', 'sha1' => 'sha1', 'SHA256' => 'sha256');
-       // always just do the RSA signing - we assume that the service can do the padding/DER encoding
-       if (!key_exists($algo, $hashalgo)) {
-           return false;
-       }
-       $algo = $hashalgo[$algo];
-
-       switch ($algo) {
-           case 'sha1':
-               $t = pack('H*', '3021300906052b0e03021a05000414');
-               break;
-           case 'sha256':
-               $t = pack('H*', '3031300d060960864801650304020105000420');
-               break;
-       }
-
-       $data = $t . hash($hashalgo[$algo], $data, true);
-       return $this->callHSM('sign', $data, $keyident, 'CKM_RSA_PKCS', '');
-   }
-
-
-
-
-   private function decryptHSM($data, $keyident) {
-       return $this->callHSM('decrypt', $data, $keyident, 'CKM_RSA_PKCS_OAEP', 'CKM_SHA_1');
-   }
-*/
 
 func callHSM(function string, data []byte, privatekey, mech, digest string) (res []byte, err error) {
 	type request struct {
