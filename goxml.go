@@ -249,10 +249,10 @@ func (xp *Xp) addXPathContext() {
 
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
 func NewXpFromNode(node types.Node) *Xp {
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
 	xp := NewXp([]byte{})
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	return xp
 }
 
@@ -499,7 +499,7 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 
 // Sign the given context with the given private key - which is a PEM or hsm: key
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
-// See https://github.com/wayf-dk/goeleven
+// See https://github.com/wayf-dk/
 func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, algo string) (err error) {
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)

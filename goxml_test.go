@@ -1,7 +1,7 @@
 package goxml
 
 import (
-	"crypto"
+	"crypto/sha1"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
@@ -11,9 +11,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"runtime"
+	//"runtime"
 	"strings"
-	"testing"
+	//"time"
+	//"testing"
+	//"github.com/y0ssar1an/q"
 )
 
 type Testparams struct {
@@ -36,7 +38,8 @@ var (
 )
 
 func printHashedDom(xp *Xp) {
-	fmt.Println(base64.StdEncoding.EncodeToString(Hash(crypto.SHA1, xp.C14n(nil, ""))))
+    hash := sha1.Sum([]byte(xp.C14n(nil, "")))
+	fmt.Println(base64.StdEncoding.EncodeToString(append(hash[:])))
 }
 
 func ExampleCpXp() {
@@ -46,7 +49,7 @@ func ExampleCpXp() {
 	// 8fqgdCA2D9Ywkf/OOzIwQRmbXTM=
 }
 
-func TestC14n(*testing.T) {
+/*func TestC14n(*testing.T) {
 	xp := NewXpFromFile("testdata/response.xml")
 	c14n := ""
 	i := 0
@@ -59,7 +62,7 @@ func TestC14n(*testing.T) {
 		runtime.GC()
 	}
 	fmt.Println(c14n)
-}
+}*/
 
 func ExampleAddXPathContext() {
 	xp := NewXpFromFile("testdata/response.xml")
@@ -108,25 +111,22 @@ func ExampleQueryBool() {
 }
 
 func ExampleNewXpFromNode() {
-	xp := NewXpFromFile("testdata/response.xml")
-	node := xp.Query(nil, `./saml:Assertion`)[0]
-	xp_res := NewXpFromNode(node)
+    /*for i := 0; i <= 2000; i++ {
+    	for j := 0; j <= 1; j++ {
+   	        xp_res = NewXpFromNode(node)
+   	    }
+   	}*/
+   	xp := NewXpFromFile("testdata/response.xml")
+   	node := xp.Query(nil, `./saml:Assertion`)[0]
+   	xp_res := NewXpFromNode(node)
 	printHashedDom(xp_res)
 	// Output:
 	// 3NN6sB8hU2sKZhm8kUKzHQhfBps=
 }
 
 func ExampleQueryMulti() {
-	xp_res := []string{}
 	xp := NewXpFromFile("testdata/response.xml")
-	for i := range [10000]int{} {
-		for _ = range [1000]int{} {
-			xp_res = xp.QueryMulti(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
-			//xp_res = xp.Query1(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
-		}
-		log.Println(i)
-		runtime.GC()
-	}
+	xp_res := xp.QueryMulti(nil, `./saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue`)
 	fmt.Println(xp_res)
 	// Output:
 	// [madpe@dtu.dk Mads Freek Petersen Mads Freek Petersen da-DK Danmarks Tekniske Universitet madpe@dtu.dk staff urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763 2 urn:mace:terena.org:tcs:escience-user dtu.dk urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3 1959 19590824]
@@ -441,26 +441,23 @@ func ExampleXSW8() {
 	// verify: <nil>
 }
 
-func ExampleQueryDashP_11() {
-	for i := range [1]int{} {
-		for _ = range [1]int{} {
+func xExampleQueryDashP_11() {
+	for _ = range [1]int{} {
 
-			xp := NewXpFromFile("testdata/response.xml")
-			xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]`, "anton", nil)
-			xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]`, "joe", nil)
-			xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
-			xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "xxx", nil)
+		xp := NewXpFromFile("testdata/response.xml")
+		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]`, "anton", nil)
+		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]`, "joe", nil)
+		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
+		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "xxx", nil)
 
-			/*
-			   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
-			   xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "\x1b", nil)
-			   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
-			   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]"))
-			   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]"))
-			   fmt.Println(i, xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]"))
-			*/
-		}
-		log.Println(i)
+		/*
+		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
+		   xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "\x1b", nil)
+		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
+		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]"))
+		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]"))
+		   fmt.Println(i, xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]"))
+		*/
 	}
 	// Output:
 	// xxx
