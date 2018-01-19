@@ -42,9 +42,10 @@ var (
 
 type (
 
-	// Xp is a wrapper for the libxml2 xmlDoc and xmlXpathContext
-	// master is a pointer to the original struct with the shared
-	// xmlDoc so that is never gets deallocated before any copies
+	/* Xp is a wrapper for the libxml2 xmlDoc and xmlXpathContext
+	   master is a pointer to the original struct with the shared
+	   xmlDoc so that is never gets deallocated before any copies
+	*/
 	Xp struct {
 		Doc      *dom.Document
 		Xpath    *xpath.Context
@@ -66,8 +67,9 @@ type (
 		Cause error
 	}
 )
-
-// algos from shorthand to xmlsec and golang defs of digest and signature algorithms
+/**
+  algos from shorthand to xmlsec and golang defs of digest and signature algorithms
+*/
 var (
 	Algos = map[string]algo{
 		"sha1":   algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
@@ -107,8 +109,9 @@ var (
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
 )
-
-// init the library
+/**
+  init the library
+*/
 func init() {
 	// from xmlsec idents to golang defs of digest algorithms
 	for _, a := range Algos {
@@ -117,7 +120,7 @@ func init() {
 	}
 }
 
-/**
+/*
   Werror allows us to make error that are list of semistructured messages "tag: message" to
   allow for textual error messages that can be interpreted by a program.
 */
@@ -167,6 +170,9 @@ func (e Werror) Stack(depth int) (st string) {
 	return
 }
 
+/*
+  freeXp free the Memory
+*/
 func freeXp(xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -181,7 +187,9 @@ func freeXp(xp *Xp) {
 	xp.released = true
 }
 
-// Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
+/*
+  Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
+*/
 func NewXp(xml []byte) (xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -199,7 +207,9 @@ func NewXp(xml []byte) (xp *Xp) {
 	return
 }
 
-// Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
+/*
+  Parse SAML xml to Xp object with doc and xpath with relevant namespaces registered
+*/
 func NewXpFromString(xml string) (xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -217,6 +227,9 @@ func NewXpFromString(xml string) (xp *Xp) {
 	return
 }
 
+/*
+  Creates a NewXP from File. Used for testing purposes
+*/
 func NewXpFromFile(file string) *Xp {
 	xml, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -225,10 +238,12 @@ func NewXpFromFile(file string) *Xp {
 	return NewXp(xml)
 }
 
-// Make a copy of the Xp object - shares the document with the source, but allocates a new xmlXPathContext because
-// they are not thread/gorutine safe as the context is set for each query call
-// Only the document "owning" Xp releases the C level document and it needs be around as long as any copies - ie. do
-// not let the original document be garbage collected or havoc will be wreaked
+/*
+  Make a copy of the Xp object - shares the document with the source, but allocates a new xmlXPathContext because
+  They are not thread/gorutine safe as the context is set for each query call
+  Only the document "owning" Xp releases the C level document and it needs be around as long as any copies - ie. do
+  not let the original document be garbage collected or havoc will be wreaked
+*/
 func (src *Xp) CpXp() (xp *Xp) {
 	xp = new(Xp)
 	xp.Doc = src.Doc
@@ -247,7 +262,9 @@ func (xp *Xp) addXPathContext() {
 	}
 }
 
-// NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
+/*
+  NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
+*/
 func NewXpFromNode(node types.Node) *Xp {
 	xp := NewXp([]byte{})
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
@@ -256,8 +273,10 @@ func NewXpFromNode(node types.Node) *Xp {
 	return xp
 }
 
-// Parse html object with doc - used in testing for "forwarding" samlresponses from html to http
-// Disables error reporting - libxml2 complains about html5 elements
+/*
+  Parse html object with doc - used in testing for "forwarding" samlresponses from html to http
+  Disables error reporting - libxml2 complains about html5 elements
+*/
 func NewHtmlXp(html []byte) (xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -282,8 +301,10 @@ func (xp *Xp) DocGetRootElement() *types.Node {
 	return &root
 }
 
-// to-do make go-libxml2 accept extended param
-// to-do remove it from Xp
+/*
+  to-do make go-libxml2 accept extended param
+  to-do remove it from Xp
+*/
 func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -294,9 +315,10 @@ func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 	cp, _ := dom.WrapNode(nptr)
 	return cp
 }
-
-// C14n Canonicalise the node using the SAML specified exclusive method
-// Very slow on large documents with node != nil
+/*
+  C14n Canonicalise the node using the SAML specified exclusive method
+  Very slow on large documents with node != nil
+*/
 func (xp *Xp) C14n(node types.Node, nsPrefixes string) (s string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -314,19 +336,27 @@ func (xp *Xp) Dump() []byte {
 	return []byte(xp.Doc.Dump(false))
 }
 
+/*
+  PP() Pretty Prints
+*/
 func (xp *Xp) PP() string {
 	root, _ := xp.Doc.DocumentElement()
 	return xp.PPE(root)
 }
 
+/*
+  PPE() is an extension of Pretty Prints
+*/
 func (xp *Xp) PPE(element types.Node) string {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
 	return walk(element, 0)
 }
 
-// Query Do a xpath query with the given context
-// returns a slice of nodes
+/*
+  Query Do a xpath query with the given context
+  returns a slice of nodes
+*/
 func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -337,7 +367,9 @@ func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 	return xpath.NodeList(xp.Xpath.Find(path))
 }
 
-// QueryNumber evaluates an xpath expressions that returns a number
+/*
+  QueryNumber evaluates an xpath expressions that returns a number
+*/
 func (xp *Xp) QueryNumber(context types.Node, path string) (val int) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -347,7 +379,9 @@ func (xp *Xp) QueryNumber(context types.Node, path string) (val int) {
 	return int(xpath.Number(xp.Xpath.Find(path)))
 }
 
-// QueryString evaluates an xpath expressions that returns a string
+/*
+  QueryString evaluates an xpath expressions that returns a string
+*/
 func (xp *Xp) QueryString(context types.Node, path string) (val string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -357,7 +391,9 @@ func (xp *Xp) QueryString(context types.Node, path string) (val string) {
 	return xpath.String(xp.Xpath.Find(path))
 }
 
-// QueryNumber evaluates an xpath expressions that returns a bool
+/*
+  QueryNumber evaluates an xpath expressions that returns a bool
+*/
 func (xp *Xp) QueryBool(context types.Node, path string) bool {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
@@ -367,8 +403,10 @@ func (xp *Xp) QueryBool(context types.Node, path string) bool {
 	return xpath.Bool(xp.Xpath.Find(path))
 }
 
-// Q1 Utility function to get the content of the nodes from a xpath query
-// as a slice of strings
+/*
+  Q1 Utility function to get the content of the nodes from a xpath query
+  as a slice of strings
+*/
 func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	nodes := xp.Query(context, path)
 	for _, node := range nodes {
@@ -377,8 +415,10 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	return
 }
 
-// Q1 Utility function to get the content of the first node from a xpath query
-// as a string
+/*
+  Q1 Utility function to get the content of the first node from a xpath query
+  as a string
+*/
 func (xp *Xp) Query1(context types.Node, path string) string {
 	res := xp.QueryMulti(context, path)
 	if len(res) > 0 {
@@ -387,8 +427,10 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 	return ""
 }
 
-//  QueryDashP generative xpath query - ie. mkdir -p for xpath ...
-//  Understands simple xpath expressions including indexes and attribute values
+/*
+  QueryDashP generative xpath query - ie. mkdir -p for xpath ...
+  Understands simple xpath expressions including indexes and attribute values
+*/
 func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
 	// split in path elements, an element might include an attribute expression incl. value eg.
 	// /md:EntitiesDescriptor/md:EntityDescriptor[@entityID="https://wayf.wayf.dk"]/md:SPSSODescriptor
@@ -458,7 +500,9 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	return context
 }
 
-// CreateElementNS Create an element with the given namespace
+/*
+  CreateElementNS Create an element with the given namespace
+*/
 func (xp *Xp) createElementNS(prefix, element string, context types.Node, before types.Node) (newcontext types.Element) {
 
 	//    q.Q(context, xp.PPE(context))
@@ -479,7 +523,9 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 	return
 }
 
-// Validate - Schemavalidate the document against the the schema file given in url
+/*
+  Validate - Schemavalidate the document against the the schema file given in url
+*/
 func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 	//    xsdsrc, _ := ioutil.ReadFile(url)
 	var schema *xsd.Schema
@@ -497,9 +543,11 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 	return nil, nil
 }
 
-// Sign the given context with the given private key - which is a PEM or hsm: key
-// A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
-// See https://github.com/wayf-dk/
+/*
+  Sign the given context with the given private key - which is a PEM or hsm: key
+  A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
+  See https://github.com/wayf-dk/
+*/
 func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, algo string) (err error) {
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
@@ -529,7 +577,9 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, a
 	return
 }
 
-// VerifySignature Verify a signature for the given context and public key
+/*
+  VerifySignature Verify a signature for the given context and public key
+*/
 func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	signaturelist := xp.Query(context, "ds:Signature[1]")
 	if len(signaturelist) != 1 {
@@ -604,9 +654,11 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 	return callHSM("sign", data, string(privatekey), "CKM_RSA_PKCS", "")
 }
 
-// Encrypt the context with the given publickey
-// Hardcoded to aes256-cbc for the symetric part and
-// rsa-oaep-mgf1p and sha1 for the rsa part
+/*
+  Encrypt the context with the given publickey
+  Hardcoded to aes256-cbc for the symetric part and
+  rsa-oaep-mgf1p and sha1 for the rsa part
+*/
 func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (err error) {
 	ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
 	ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
@@ -634,8 +686,10 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 	return
 }
 
-// Decrypt decrypts the context using the given privatekey .
-// The context element is removed
+/*
+  Decrypt decrypts the context using the given privatekey .
+  The context element is removed
+*/
 func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
@@ -743,7 +797,9 @@ func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err erro
 	return NewXp(plaintext), nil
 }
 
-// Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
+/*
+  Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
+*/
 func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey) {
 	block, _ := pem.Decode(privatekeypem)
 	if string(pw) != "" {
@@ -755,7 +811,9 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey) {
 	return
 }
 
-// encryptAES encrypts the plaintext with a generated random key and returns both the key and the ciphertext
+/*
+  encryptAES encrypts the plaintext with a generated random key and returns both the key and the ciphertext
+*/
 func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 	key = make([]byte, 32)
 	if _, err = io.ReadFull(rand.Reader, key); err != nil {
@@ -781,7 +839,9 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 	return
 }
 
-// decryptAES decrypts the ciphertext using the supplied key
+/*
+  decryptAES decrypts the ciphertext using the supplied key
+*/
 func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
 		return nil, errors.New("Not enough data to decrypt for AES-GCM")
@@ -807,7 +867,9 @@ func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 	return
 }
 
-// decryptAES decrypts the ciphertext using the supplied key
+/*
+  decryptAES decrypts the ciphertext using the supplied key
+*/
 func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
@@ -874,7 +936,9 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 	return response.Signed, err
 }
 
-// Hash Perform a digest calculation using the given crypto.Hash
+/*
+  Hash Perform a digest calculation using the given crypto.Hash
+*/
 func Hash(h crypto.Hash, data string) []byte {
 	digest := h.New()
 	io.WriteString(digest, data)
