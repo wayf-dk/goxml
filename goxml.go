@@ -70,6 +70,7 @@ type (
 // algos from shorthand to xmlsec and golang defs of digest and signature algorithms
 var (
 	Algos = map[string]algo{
+		"":       algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
 		"sha1":   algo{"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
 		"sha256": algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
 		//        "ecdsa-sha256" : algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
@@ -112,8 +113,8 @@ var (
 func init() {
 	// from xmlsec idents to golang defs of digest algorithms
 	for _, a := range Algos {
-		Algos[a.digest] = algo{"", "", a.Algo, a.derprefix}
-		Algos[a.Signature] = algo{"", "", a.Algo, a.derprefix}
+		Algos[a.digest] = a
+		Algos[a.Signature] = a
 	}
 }
 
