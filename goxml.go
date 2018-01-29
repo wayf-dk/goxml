@@ -68,6 +68,7 @@ type (
 		Cause error
 	}
 )
+
 /**
   algos from shorthand to xmlsec and golang defs of digest and signature algorithms
 */
@@ -111,6 +112,7 @@ var (
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
 )
+
 /**
   init the library
 */
@@ -176,12 +178,13 @@ func (e Werror) Stack(depth int) (st string) {
   freeXp free the Memory
 */
 func freeXp(xp *Xp) {
+	//q.Q(xp)
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
+	//q.Q("freeXp", xp, NewWerror("freeXp").Stack(2))
 	if xp.released {
 		return
 	}
-	//    q.Q("free", xp)
 	xp.Xpath.Free()
 	if xp.master == nil { // the Doc is shared - only Free the master
 		xp.Doc.Free()
@@ -205,7 +208,7 @@ func NewXp(xml []byte) (xp *Xp) {
 
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("Newxp", xp, NewWerror("Newxp").Stack(2))
+	//q.Q("Newxp", xp, NewWerror("Newxp").Stack(2))
 	return
 }
 
@@ -222,10 +225,9 @@ func NewXpFromString(xml string) (xp *Xp) {
 		doc, _ := libxml2.ParseString(xml, 0)
 		xp.Doc = doc.(*dom.Document)
 	}
-
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
+	//q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
 	return
 }
 
@@ -252,7 +254,7 @@ func (src *Xp) CpXp() (xp *Xp) {
 	xp.master = src
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("cpXp", xp, NewWerror("cpXp").Stack(2))
+	//q.Q("cpXp", xp, NewWerror("cpXp").Stack(2))
 	return
 }
 
@@ -270,8 +272,6 @@ func (xp *Xp) addXPathContext() {
 func NewXpFromNode(node types.Node) *Xp {
 	xp := NewXp([]byte{})
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
 	return xp
 }
 
@@ -317,6 +317,7 @@ func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 	cp, _ := dom.WrapNode(nptr)
 	return cp
 }
+
 /*
   C14n Canonicalise the node using the SAML specified exclusive method
   Very slow on large documents with node != nil
@@ -451,7 +452,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		element := elements[1]
 		attrContext = nil
 		nodes := xp.Query(context, element)
-		//q.Q(nodes, elements)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
@@ -606,7 +606,7 @@ func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
 	context.RemoveChild(signature)
-	defer signature.Free()
+	//defer signature.Free()
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
@@ -671,7 +671,7 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
-	defer context.Free()
+	//defer context.Free()
 	return
 }
 
@@ -679,7 +679,7 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err
   Decrypt decrypts the context using the given privatekey .
   The context element is removed
 */
-func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err error) {
+func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
