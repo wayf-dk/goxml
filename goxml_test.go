@@ -1,8 +1,8 @@
 package goxml
 
 import (
-	"crypto/sha1"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -38,7 +38,7 @@ var (
 )
 
 func printHashedDom(xp *Xp) {
-    hash := sha1.Sum([]byte(xp.C14n(nil, "")))
+	hash := sha1.Sum([]byte(xp.C14n(nil, "")))
 	fmt.Println(base64.StdEncoding.EncodeToString(append(hash[:])))
 }
 
@@ -111,14 +111,14 @@ func ExampleQueryBool() {
 }
 
 func ExampleNewXpFromNode() {
-    /*for i := 0; i <= 2000; i++ {
-    	for j := 0; j <= 1; j++ {
-   	        xp_res = NewXpFromNode(node)
-   	    }
-   	}*/
-   	xp := NewXpFromFile("testdata/response.xml")
-   	node := xp.Query(nil, `./saml:Assertion`)[0]
-   	xp_res := NewXpFromNode(node)
+	/*for i := 0; i <= 2000; i++ {
+	   	for j := 0; j <= 1; j++ {
+	  	        xp_res = NewXpFromNode(node)
+	  	    }
+	  	}*/
+	xp := NewXpFromFile("testdata/response.xml")
+	node := xp.Query(nil, `./saml:Assertion`)[0]
+	xp_res := NewXpFromNode(node)
 	printHashedDom(xp_res)
 	// Output:
 	// 3NN6sB8hU2sKZhm8kUKzHQhfBps=
@@ -521,20 +521,19 @@ func ExampleEncryptAndDecrypt() {
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
 
 	fmt.Print(xp.Doc.Dump(true))
-
 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
 
-	pk := Pem2PrivateKey(privatekey, []byte{})
+	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
 	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
-	xp.Encrypt(assertion.(types.Element), &pk.PublicKey, ea)
+	xp.Encrypt(assertion, &pk.PublicKey, ea)
 
 	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
 	encryptedData := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := xp.Decrypt(encryptedData.(types.Element), privatekey)
+	decryptedAssertion, _ := xp.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
 
 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
@@ -593,7 +592,7 @@ func ExampleDecryptShibResponse() {
 
 	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
 	encryptedData := shibresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := shibresponse.Decrypt(encryptedData.(types.Element), privatekey)
+	decryptedAssertion, _ := shibresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
 
 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
@@ -630,7 +629,7 @@ func ExampleDecryptNemloginResponse() {
 
 	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
 	encryptedData := nemloginresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := nemloginresponse.Decrypt(encryptedData.(types.Element), privatekey)
+	decryptedAssertion, _ := nemloginresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
 
 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
@@ -656,7 +655,7 @@ func ExampleDecryptNemloginResponse() {
 	// GuWLBRb1kEiwx/86+R0RmQnI8Mw=
 }
 
-func ExampleDecrypt() { //OAEP does not support  different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
+func ExampleDecrypt() { //OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
 
 	tests := []string{
 		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
@@ -668,21 +667,20 @@ func ExampleDecrypt() { //OAEP does not support  different key Encryption method
 	for _, test := range tests {
 		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
 		parts := strings.Split(test, "__")
-		//fmt.Println(parts)
 
 		pemFile := "testdata/private.key.pem"
 		pemBlock, _ := ioutil.ReadFile(pemFile)
 		xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
 		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
-		decrypted, err := xp.Decrypt(encryptedData.(types.Element), pemBlock)
+		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
 		if err == rsa.ErrDecryption {
 			pemFile := "testdata/w3c/" + parts[1] + ".pem"
 			pemBlock, _ := ioutil.ReadFile(pemFile)
 			xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
 			encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
-			decrypted, err = xp.Decrypt(encryptedData.(types.Element), pemBlock)
+			decrypted, err = xp.Decrypt(encryptedData, pemBlock, []byte("-"))
 			if err != nil {
 				fmt.Println("Error =", err)
 			}
