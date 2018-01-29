@@ -30,6 +30,7 @@ import (
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
+	"github.com/wayf-dk/goeleven/src/goeleven"
 	"github.com/y0ssar1an/q"
 	"runtime"
 	"sync"
@@ -910,13 +911,16 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 
 	parts := strings.SplitN(strings.TrimSpace(privatekey), ":", 3)
 
-	payload := request{
+	//	payload := request{
+	payload := goeleven.Request{
 		Data:      base64.StdEncoding.EncodeToString(data),
 		Mech:      mech,
 		Digest:    digest,
 		Function:  function,
 		Sharedkey: parts[1],
 	}
+
+	return goeleven.Dispatch(parts[2], payload)
 
 	jsontxt, err := json.Marshal(payload)
 	if err != nil {
