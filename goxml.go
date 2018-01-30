@@ -30,6 +30,7 @@ import (
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
+	"github.com/wayf-dk/goeleven/src/goeleven"
 	"github.com/y0ssar1an/q"
 	"runtime"
 	"sync"
@@ -67,6 +68,7 @@ type (
 		Cause error
 	}
 )
+
 /**
   algos from shorthand to xmlsec and golang defs of digest and signature algorithms
 */
@@ -110,6 +112,7 @@ var (
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
 )
+
 /**
   init the library
 */
@@ -175,12 +178,13 @@ func (e Werror) Stack(depth int) (st string) {
   freeXp free the Memory
 */
 func freeXp(xp *Xp) {
+	//q.Q(xp)
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
+	//q.Q("freeXp", xp, NewWerror("freeXp").Stack(2))
 	if xp.released {
 		return
 	}
-	//    q.Q("free", xp)
 	xp.Xpath.Free()
 	if xp.master == nil { // the Doc is shared - only Free the master
 		xp.Doc.Free()
@@ -204,7 +208,7 @@ func NewXp(xml []byte) (xp *Xp) {
 
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("Newxp", xp, NewWerror("Newxp").Stack(2))
+	//q.Q("Newxp", xp, NewWerror("Newxp").Stack(2))
 	return
 }
 
@@ -221,10 +225,9 @@ func NewXpFromString(xml string) (xp *Xp) {
 		doc, _ := libxml2.ParseString(xml, 0)
 		xp.Doc = doc.(*dom.Document)
 	}
-
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
+	//q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
 	return
 }
 
@@ -251,7 +254,7 @@ func (src *Xp) CpXp() (xp *Xp) {
 	xp.master = src
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
-	//	q.Q("cpXp", xp, NewWerror("cpXp").Stack(2))
+	//q.Q("cpXp", xp, NewWerror("cpXp").Stack(2))
 	return
 }
 
@@ -269,8 +272,6 @@ func (xp *Xp) addXPathContext() {
 func NewXpFromNode(node types.Node) *Xp {
 	xp := NewXp([]byte{})
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
 	return xp
 }
 
@@ -316,6 +317,7 @@ func (xp *Xp) CopyNode(node types.Node, extended int) types.Node {
 	cp, _ := dom.WrapNode(nptr)
 	return cp
 }
+
 /*
   C14n Canonicalise the node using the SAML specified exclusive method
   Very slow on large documents with node != nil
@@ -450,7 +452,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 		element := elements[1]
 		attrContext = nil
 		nodes := xp.Query(context, element)
-		//q.Q(nodes, elements)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
@@ -549,13 +550,13 @@ func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
   A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
   See https://github.com/wayf-dk/
 */
-func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, algo string) (err error) {
+func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo string) (err error) {
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
 	id := xp.Query1(context, "@ID")
 
-	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before).(types.Element)
+	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before)
 	xp.QueryDashP(signedInfo, `/ds:CanonicalizationMethod/@Algorithm`, "http://www.w3.org/2001/10/xml-exc-c14n#", nil)
 	xp.QueryDashP(signedInfo, `ds:SignatureMethod[1]/@Algorithm`, Algos[algo].Signature, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/@URI`, "#"+id, nil)
@@ -581,15 +582,15 @@ func (xp *Xp) Sign(context, before types.Element, privatekey, pw []byte, cert, a
 /*
   VerifySignature Verify a signature for the given context and public key
 */
-func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
+func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
 	signaturelist := xp.Query(context, "ds:Signature[1]")
 	if len(signaturelist) != 1 {
 		return fmt.Errorf("no signature found")
 	}
-	signature := signaturelist[0].(types.Element)
+	signature := signaturelist[0]
 
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
-	signedInfo := xp.Query(signature, "ds:SignedInfo")[0].(types.Element)
+	signedInfo := xp.Query(signature, "ds:SignedInfo")[0]
 
 	signedInfoC14n := xp.C14n(signedInfo, "")
 	digestValue := xp.Query1(signedInfo, "ds:Reference/ds:DigestValue")
@@ -605,7 +606,7 @@ func (xp *Xp) VerifySignature(context types.Element, pub *rsa.PublicKey) error {
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
 	context.RemoveChild(signature)
-	defer signature.Free()
+	//defer signature.Free()
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
@@ -630,20 +631,7 @@ func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, er
 
 func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
 	var priv *rsa.PrivateKey
-	block, _ := pem.Decode(privatekey)
-	if block == nil {
-		return nil, NewWerror("errmsg:PEM decode")
-	}
-	if string(pw) != "-" {
-		privbytes, err := x509.DecryptPEMBlock(block, pw)
-		if err != nil {
-			return nil, Wrap(err, "errmsg:Password error")
-		}
-		priv, err = x509.ParsePKCS1PrivateKey(privbytes)
-	} else {
-		priv, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	}
-	if err != nil {
+	if priv, err = Pem2PrivateKey(privatekey, pw); err != nil {
 		return
 	}
 	signaturevalue, err = rsa.SignPKCS1v15(rand.Reader, priv, Algos[algo].Algo, digest)
@@ -660,7 +648,7 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
   Hardcoded to aes256-cbc for the symetric part and
   rsa-oaep-mgf1p and sha1 for the rsa part
 */
-func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (err error) {
+func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err error) {
 	ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
 	ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
 	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
@@ -670,12 +658,12 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 	if err != nil {
 		return
 	}
-	sessionkey, err = rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
+	encryptedSessionkey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
 	if err != nil {
 		return
 	}
 
-	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(sessionkey), nil)
+	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(encryptedSessionkey), nil)
 	ee.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
 	parent, _ := context.ParentNode()
 
@@ -683,7 +671,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
-	defer context.Free()
+	//defer context.Free()
 	return
 }
 
@@ -691,7 +679,7 @@ func (xp *Xp) Encrypt(context types.Element, publickey *rsa.PublicKey, ee *Xp) (
   Decrypt decrypts the context using the given privatekey .
   The context element is removed
 */
-func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err error) {
+func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err error) {
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -760,18 +748,14 @@ func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err erro
 	case true:
 		sessionkey, err = callHSM("decrypt", encryptedKeybyte, string(privatekey), "CKM_RSA_PKCS_OAEP", "CKM_SHA_1")
 	case false:
-		block, _ := pem.Decode(privatekey)
-		/*
-		   if pw != "-" {
-		       privbytes, _ := x509.DecryptPEMBlock(block, []byte(pw))
-		       priv, _ = x509.ParsePKCS1PrivateKey(privbytes)
-		   } else {
-		       priv, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
-		   }
-		*/
-		priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-
+		priv, err := Pem2PrivateKey(privatekey, pw)
+		if err != nil {
+			return nil, err
+		}
 		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv, encryptedKeybyte, OAEPparamsbyte)
+		if err != nil {
+			return nil, err
+		}
 	}
 	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
 	if err != nil {
@@ -801,13 +785,16 @@ func (xp *Xp) Decrypt(context types.Element, privatekey []byte) (x *Xp, err erro
 /*
   Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
 */
-func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey) {
-	block, _ := pem.Decode(privatekeypem)
-	if string(pw) != "" {
-		privbytes, _ := x509.DecryptPEMBlock(block, pw)
-		privatekey, _ = x509.ParsePKCS1PrivateKey(privbytes)
-	} else {
-		privatekey, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
+func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err error) {
+	block, _ := pem.Decode(privatekeypem) // not used rest
+	derbytes := block.Bytes
+	if string(pw) != "-" {
+		if derbytes, err = x509.DecryptPEMBlock(block, pw); err != nil {
+			return nil, Wrap(err)
+		}
+	}
+	if privatekey, err = x509.ParsePKCS1PrivateKey(derbytes); err != nil {
+		return nil, Wrap(err)
 	}
 	return
 }
@@ -910,13 +897,16 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 
 	parts := strings.SplitN(strings.TrimSpace(privatekey), ":", 3)
 
-	payload := request{
+	//	payload := request{
+	payload := goeleven.Request{
 		Data:      base64.StdEncoding.EncodeToString(data),
 		Mech:      mech,
 		Digest:    digest,
 		Function:  function,
 		Sharedkey: parts[1],
 	}
+
+	return goeleven.Dispatch(parts[2], payload)
 
 	jsontxt, err := json.Marshal(payload)
 	if err != nil {
