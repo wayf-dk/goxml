@@ -348,7 +348,7 @@ func (xp *Xp) PP() string {
 }
 
 /*
-  PPE() is an extension of Pretty Prints
+  PPE() Prints an element
 */
 func (xp *Xp) PPE(element types.Node) string {
 	libxml2Lock.Lock()
@@ -407,7 +407,7 @@ func (xp *Xp) QueryBool(context types.Node, path string) bool {
 }
 
 /*
-  Q1 Utility function to get the content of the nodes from a xpath query
+  QueryMulti function to get the content of the nodes from a xpath query
   as a slice of strings
 */
 func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
@@ -526,7 +526,7 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 }
 
 /*
-  Validate - Schemavalidate the document against the the schema file given in url
+  SchemaValidate validate the document against the the schema file given in url
 */
 func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
 	//    xsdsrc, _ := ioutil.ReadFile(url)
@@ -800,7 +800,7 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err e
 }
 
 /*
-  encryptAES encrypts the plaintext with a generated random key and returns both the key and the ciphertext
+  encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext
 */
 func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 	key = make([]byte, 32)
@@ -828,7 +828,7 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 }
 
 /*
-  decryptAES decrypts the ciphertext using the supplied key
+  decryptGCM decrypts the ciphertext using the supplied key
 */
 func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
@@ -856,7 +856,7 @@ func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 }
 
 /*
-  decryptAES decrypts the ciphertext using the supplied key
+  decryptCBC decrypts the ciphertext using the supplied key
 */
 func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
 	iv := ciphertext[:aes.BlockSize]
