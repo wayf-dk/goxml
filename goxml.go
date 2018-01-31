@@ -296,11 +296,11 @@ func NewHtmlXp(html []byte) (xp *Xp) {
 	return
 }
 
-func (xp *Xp) DocGetRootElement() *types.Node {
+func (xp *Xp) DocGetRootElement() types.Node {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
 	root, _ := xp.Doc.DocumentElement()
-	return &root
+	return root
 }
 
 /*
