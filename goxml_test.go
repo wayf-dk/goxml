@@ -42,6 +42,16 @@ func printHashedDom(xp *Xp) {
 	fmt.Println(base64.StdEncoding.EncodeToString(append(hash[:])))
 }
 
+func ExampleC14NWithComment() {
+	xp := NewXpFromFile("testdata/response.xml")
+	printHashedDom(xp)
+	xp = NewXpFromFile("testdata/response-with-comment.xml")
+	printHashedDom(xp)
+	// Output:
+	// 8fqgdCA2D9Ywkf/OOzIwQRmbXTM=
+	// 8fqgdCA2D9Ywkf/OOzIwQRmbXTM=
+}
+
 func ExampleCpXp() {
 	xp := NewXpFromFile("testdata/response.xml")
 	printHashedDom(xp)
