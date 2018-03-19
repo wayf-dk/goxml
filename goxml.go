@@ -106,6 +106,11 @@ var (
 		"xsl":        "http://www.w3.org/1999/XSL/Transform",
 		"ec":         "http://www.w3.org/2001/10/xml-exc-c14n#",
 		"aslo":       "urn:oasis:names:tc:SAML:2.0:protocol:ext:async-slo",
+		"t":          "http://schemas.xmlsoap.org/ws/2005/02/trust",
+		"wsu":        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+		"wsp":        "http://schemas.xmlsoap.org/ws/2004/09/policy",
+		"wsa":        "http://www.w3.org/2005/08/addressing",
+		"a":          "http://schemas.xmlsoap.org/ws/2009/09/identity/claims",
 	}
 
 	// persistent cache of compiled schemas
