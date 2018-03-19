@@ -63,6 +63,7 @@ type (
 	}
 
 	Werror struct {
+		P     []string // err msgs for public consumption
 		C     []string
 		PC    []uintptr `json:"-"`
 		Cause error
@@ -155,8 +156,22 @@ func Wrap(err error, ctx ...string) error {
 	return err
 }
 
+func PublicError(e Werror, ctx ...string) error {
+	e.P = append(e.P, ctx...)
+	return e
+}
+
 func (e Werror) Error() (err string) {
 	errjson, _ := json.Marshal(e.C)
+	if len(e.P) > 0 {
+		errjson, _ = json.Marshal(e.P)
+	}
+	err = string(errjson)
+	return
+}
+
+func (e Werror) FullError() (err string) {
+	errjson, _ := json.Marshal(append(e.C, e.P...))
 	err = string(errjson)
 	return
 }
@@ -204,11 +219,11 @@ func NewXp(xml []byte) (xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
 	xp = new(Xp)
-	if len(xml) == 0 {
-		xp.Doc = dom.NewDocument("1.0", "")
-	} else {
-		doc, _ := libxml2.Parse(xml, 0)
+	doc, _ := libxml2.Parse(xml, 0)
+	if doc != nil {
 		xp.Doc = doc.(*dom.Document)
+	} else {
+		xp.Doc = dom.NewDocument("1.0", "")
 	}
 
 	xp.addXPathContext()
@@ -224,12 +239,13 @@ func NewXpFromString(xml string) (xp *Xp) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
 	xp = new(Xp)
-	if len(xml) == 0 {
-		xp.Doc = dom.NewDocument("1.0", "")
-	} else {
-		doc, _ := libxml2.ParseString(xml, 0)
+	doc, _ := libxml2.ParseString(xml, 0)
+	if doc != nil {
 		xp.Doc = doc.(*dom.Document)
+	} else {
+		xp.Doc = dom.NewDocument("1.0", "")
 	}
+
 	xp.addXPathContext()
 	runtime.SetFinalizer(xp, freeXp)
 	//q.Q("NewXpFromString", xp, NewWerror("NewXpFromString").Stack(2))
@@ -444,6 +460,9 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	// /md:EntitiesDescriptor/md:EntityDescriptor[@entityID="https://wayf.wayf.dk"]/md:SPSSODescriptor
 	var attrContext types.Node
 
+	if context == nil {
+		context, _ = xp.Doc.DocumentElement()
+	}
 	re := regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
 	re2 := regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
 	path := re.FindAllStringSubmatch(query, -1)
@@ -656,10 +675,12 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err error) {
 	ects := ee.QueryDashP(nil, `/xenc:EncryptedData`, "", nil)
 	ects.(types.Element).SetAttribute("Type", "http://www.w3.org/2001/04/xmlenc#Element")
-	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
+	ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#aes256-gcm"]`, "", nil)
+	//ee.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"]`, "", nil)
 	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
-	sessionkey, ciphertext, err := encryptAESCBC([]byte(context.ToString(1, true)))
+	sessionkey, ciphertext, err := encryptAESGCM([]byte(context.ToString(1, true)))
+	//sessionkey, ciphertext, err := encryptAESCBC([]byte(context.ToString(1, true)))
 	if err != nil {
 		return
 	}
@@ -736,12 +757,12 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 
 	encryptedKeybyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encryptedKey))
 	if err != nil {
-		return
+		return nil, Wrap(err)
 	}
 
 	OAEPparamsbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(OAEPparams))
 	if err != nil {
-		return
+		return nil, Wrap(err)
 	}
 
 	if digestAlgorithm != mgfAlgorithm {
@@ -755,16 +776,16 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 	case false:
 		priv, err := Pem2PrivateKey(privatekey, pw)
 		if err != nil {
-			return nil, err
+			return nil, Wrap(err)
 		}
 		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv, encryptedKeybyte, OAEPparamsbyte)
 		if err != nil {
-			return nil, err
+			return nil, Wrap(err)
 		}
 	}
-	//sessionkey, err := rsa.DecryptPKCS1v15(rand.Reader, privatekey, encryptedKeybyte, nil)
+
 	if err != nil {
-		return
+		return nil, Wrap(err)
 	}
 
 	switch len(sessionkey) {
@@ -776,12 +797,12 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
 	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
 	if err != nil {
-		return
+		return nil, Wrap(err)
 	}
 
 	plaintext, err := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
 	if err != nil {
-		return
+		return nil, Wrap(err)
 	}
 
 	return NewXp(plaintext), nil
@@ -805,7 +826,7 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err e
 }
 
 /*
-  encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext
+  encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext using CBC
 */
 func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 	key = make([]byte, 32)
@@ -829,6 +850,34 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
+	return
+}
+
+/*
+  encryptAESGCM encrypts the plaintext with a generated random key and returns both the key and the ciphertext using GCM
+*/
+func encryptAESGCM(plaintext []byte) (key, ciphertext []byte, err error) {
+	key = make([]byte, 32)
+	if _, err = io.ReadFull(rand.Reader, key); err != nil {
+		return
+	}
+
+	iv := make([]byte, 12)
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		return
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	ciphertext = append(iv, aesgcm.Seal(nil, iv, plaintext, nil)...)
 	return
 }
 
