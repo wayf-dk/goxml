@@ -1,7 +1,7 @@
 package goxml
 
 import (
-//	"crypto/rsa"
+	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
@@ -188,7 +188,7 @@ func ExampleSignAndValidate() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -234,7 +234,7 @@ func ExampleXSW1() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(response.(types.Element), pub))
 
@@ -263,7 +263,7 @@ func ExampleXSW2() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(response.(types.Element), pub))
 
@@ -291,7 +291,7 @@ func ExampleXSW3() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -323,7 +323,7 @@ func ExampleXSW4() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -354,7 +354,7 @@ func ExampleXSW5() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -384,7 +384,7 @@ func ExampleXSW6() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -413,7 +413,7 @@ func ExampleXSW7() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -444,7 +444,7 @@ func ExampleXSW8() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := &priv.PublicKey
+	pub := []*rsa.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
