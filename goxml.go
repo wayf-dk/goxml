@@ -606,7 +606,7 @@ func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo
 /*
   VerifySignature Verify a signature for the given context and public key
 */
-func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
+func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (err error) {
 	signaturelist := xp.Query(context, "ds:Signature[1]")
 	if len(signaturelist) != 1 {
 		return fmt.Errorf("no signature found")
@@ -643,11 +643,15 @@ func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
 	signedInfoDigest := Hash(Algos[signatureMethod].Algo, signedInfoC14n)
 
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
-	err := rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
-	if err != nil {
 
+    for _, pub := range publicKeys {
+        err = rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
+        if err == nil {
+            return
+        }
 	}
-	return err
+
+	return
 }
 
 func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
