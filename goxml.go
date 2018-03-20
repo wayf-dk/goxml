@@ -629,6 +629,9 @@ func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
+	context.RemoveChild(signature)
+	//defer signature.Free()
+
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
@@ -642,10 +645,9 @@ func (xp *Xp) VerifySignature(context types.Node, pub *rsa.PublicKey) error {
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 	err := rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
 	if err != nil {
-    	context.RemoveChild(signature)
-	    //defer signature.Free()
+
 	}
-    return err
+	return err
 }
 
 func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
