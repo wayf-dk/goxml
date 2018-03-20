@@ -509,6 +509,11 @@ func ExampleQueryDashP_3() {
 
 	fmt.Print(xp.Doc.Dump(true))
 	fmt.Println(xp.Query1(nil, `//saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`))
+	xp.Rm(nil, `.//saml:AuthenticatingAuthority`)
+	fmt.Print(xp.Doc.Dump(true))
+	xp.Rm(nil, `./saml:Assertion`)
+	fmt.Print(xp.Doc.Dump(true))
+
 	// Output:
 	// <?xml version="1.0" encoding="UTF-8"?>
 	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
@@ -523,6 +528,17 @@ func ExampleQueryDashP_3() {
 	//   </saml:Assertion>
 	// </samlp:Response>
 	// banton
+    // <?xml version="1.0" encoding="UTF-8"?>
+    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+    //   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+    //     </saml:AuthnStatement>
+    //   </saml:Assertion>
+    // </samlp:Response>
+    // <?xml version="1.0" encoding="UTF-8"?>
+    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
+
 }
 
 func ExampleEncryptAndDecrypt() {
