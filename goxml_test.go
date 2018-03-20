@@ -1,7 +1,7 @@
 package goxml
 
 import (
-	"crypto/rsa"
+//	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	//"time"
 	//"testing"
-	//"github.com/y0ssar1an/q"
+	"github.com/y0ssar1an/q"
 )
 
 type Testparams struct {
@@ -35,6 +35,7 @@ type Testparams struct {
 
 var (
 	_ = log.Printf // For debugging; delete when done.
+	_ = q.Q
 )
 
 func printHashedDom(xp *Xp) {
@@ -684,13 +685,14 @@ func ExampleDecrypt() { //OAEP does not support different key Encryption methods
 		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
 		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
-		if err == rsa.ErrDecryption {
+		if err != nil {
+		//if err == rsa.ErrDecryption {
 			pemFile := "testdata/w3c/" + parts[1] + ".pem"
 			pemBlock, _ := ioutil.ReadFile(pemFile)
-			xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
-			encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
+			xp2 := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
+			encryptedData := xp2.Query(nil, "//dummy/xenc:EncryptedData")[0]
 
-			decrypted, err = xp.Decrypt(encryptedData, pemBlock, []byte("-"))
+			decrypted, err = xp2.Decrypt(encryptedData, pemBlock, []byte("-"))
 			if err != nil {
 				fmt.Println("Error =", err)
 			}
@@ -708,9 +710,12 @@ func ExampleDecrypt() { //OAEP does not support different key Encryption methods
 	// Output:
 	// 6naYuUBtlCi/Yf1/DIZgJXIghWM=
 	// Error = digestMethod != keyEncryptionMethod not supported
-	// <nil>
 	// Error = digestMethod != keyEncryptionMethod not supported
 	// <nil>
 	// Error = digestMethod != keyEncryptionMethod not supported
+	// Error = digestMethod != keyEncryptionMethod not supported
 	// <nil>
+    // Error = digestMethod != keyEncryptionMethod not supported
+    // Error = digestMethod != keyEncryptionMethod not supported
+    //<nil>
 }
