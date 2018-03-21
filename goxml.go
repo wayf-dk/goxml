@@ -324,6 +324,14 @@ func (xp *Xp) DocGetRootElement() types.Node {
 	return root
 }
 
+func (xp *Xp) Rm(context types.Node, path string) {
+    for _, node := range xp.Query(context, path) {
+        parent, _ := node.ParentNode()
+        parent.RemoveChild(node)
+    }
+}
+
+
 /*
   to-do make go-libxml2 accept extended param
   to-do remove it from Xp
