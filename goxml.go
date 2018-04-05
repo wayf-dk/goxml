@@ -325,12 +325,16 @@ func (xp *Xp) DocGetRootElement() types.Node {
 }
 
 func (xp *Xp) Rm(context types.Node, path string) {
-    for _, node := range xp.Query(context, path) {
-        parent, _ := node.ParentNode()
-        parent.RemoveChild(node)
-    }
+	for _, node := range xp.Query(context, path) {
+		parent, _ := node.ParentNode()
+		switch x := node.(type) {
+		case types.Attribute:
+			parent.(types.Element).RemoveAttribute(x.NodeName())
+		case types.Element:
+			parent.RemoveChild(x)
+		}
+	}
 }
-
 
 /*
   to-do make go-libxml2 accept extended param
