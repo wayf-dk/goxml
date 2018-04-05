@@ -453,7 +453,7 @@ func ExampleXSW8() {
 }
 
 func xExampleQueryDashP_11() {
-	for _ = range [1]int{} {
+	for range [1]int{} {
 
 		xp := NewXpFromFile("testdata/response.xml")
 		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]`, "anton", nil)
@@ -528,16 +528,16 @@ func ExampleQueryDashP_3() {
 	//   </saml:Assertion>
 	// </samlp:Response>
 	// banton
-    // <?xml version="1.0" encoding="UTF-8"?>
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-    //   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //     </saml:AuthnStatement>
-    //   </saml:Assertion>
-    // </samlp:Response>
-    // <?xml version="1.0" encoding="UTF-8"?>
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
+	// <?xml version="1.0" encoding="UTF-8"?>
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//     </saml:AuthnStatement>
+	//   </saml:Assertion>
+	// </samlp:Response>
+	// <?xml version="1.0" encoding="UTF-8"?>
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 
 }
 
@@ -702,7 +702,7 @@ func ExampleDecrypt() { //OAEP does not support different key Encryption methods
 
 		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
 		if err != nil {
-		//if err == rsa.ErrDecryption {
+			//if err == rsa.ErrDecryption {
 			pemFile := "testdata/w3c/" + parts[1] + ".pem"
 			pemBlock, _ := ioutil.ReadFile(pemFile)
 			xp2 := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
@@ -731,7 +731,7 @@ func ExampleDecrypt() { //OAEP does not support different key Encryption methods
 	// Error = digestMethod != keyEncryptionMethod not supported
 	// Error = digestMethod != keyEncryptionMethod not supported
 	// <nil>
-    // Error = digestMethod != keyEncryptionMethod not supported
-    // Error = digestMethod != keyEncryptionMethod not supported
-    //<nil>
+	// Error = digestMethod != keyEncryptionMethod not supported
+	// Error = digestMethod != keyEncryptionMethod not supported
+	//<nil>
 }
