@@ -499,7 +499,9 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 			dn := d[0]
 			ns, element, position_s, attribute, value := dn[1], dn[2], dn[3], dn[4], dn[5]
 			if element != "" {
-				if position_s != "" {
+			    if position_s == "0" {
+					context = xp.createElementNS(ns, element, context, before)
+				} else if position_s != "" {
 					position, _ := strconv.ParseInt(position_s, 10, 0)
 					originalcontext := context
 					for i := 1; i <= int(position); i++ {
