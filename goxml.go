@@ -981,7 +981,7 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 		Sharedkey: parts[1],
 	}
 
-	return goeleven.Dispatch(parts[2], payload)
+	//return goeleven.Dispatch(parts[2], payload)
 
 	jsontxt, err := json.Marshal(payload)
 	if err != nil {
