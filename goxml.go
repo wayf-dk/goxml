@@ -112,6 +112,7 @@ var (
 		"wsp":        "http://schemas.xmlsoap.org/ws/2004/09/policy",
 		"wsa":        "http://www.w3.org/2005/08/addressing",
 		"a":          "http://schemas.xmlsoap.org/ws/2009/09/identity/claims",
+		"eidas":      "http://eidas.europa.eu/saml-extensions",
 	}
 
 	// persistent cache of compiled schemas
