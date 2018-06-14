@@ -764,6 +764,8 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 		digestAlgorithm = crypto.SHA384
 	case "http://www.w3.org/2001/04/xmlenc#sha512":
 		digestAlgorithm = crypto.SHA512
+	case "":
+    	digestAlgorithm = crypto.SHA1
 	default:
 		return nil, NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
 	}
