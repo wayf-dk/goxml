@@ -500,7 +500,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 			dn := d[0]
 			ns, element, position_s, attribute, value := dn[1], dn[2], dn[3], dn[4], dn[5]
 			if element != "" {
-			    if position_s == "0" {
+				if position_s == "0" {
 					context = xp.createElementNS(ns, element, context, before)
 				} else if position_s != "" {
 					position, _ := strconv.ParseInt(position_s, 10, 0)
@@ -765,7 +765,7 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 	case "http://www.w3.org/2001/04/xmlenc#sha512":
 		digestAlgorithm = crypto.SHA512
 	case "":
-    	digestAlgorithm = crypto.SHA1
+		digestAlgorithm = crypto.SHA1
 	default:
 		return nil, NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
 	}
