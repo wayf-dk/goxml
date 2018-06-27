@@ -984,25 +984,25 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 	}
 
 	return goeleven.Dispatch(parts[2], payload)
-/*
-	jsontxt, err := json.Marshal(payload)
-	if err != nil {
-		return nil, Wrap(err)
-	}
+	/*
+		jsontxt, err := json.Marshal(payload)
+		if err != nil {
+			return nil, Wrap(err)
+		}
 
-	resp, err := http.Post(parts[2], "application/json", bytes.NewBuffer(jsontxt))
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+		resp, err := http.Post(parts[2], "application/json", bytes.NewBuffer(jsontxt))
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
 
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	return response.Signed, err
-*/
+		err = json.Unmarshal(body, &response)
+		if err != nil {
+			return nil, Wrap(err)
+		}
+		return response.Signed, err
+	*/
 }
 
 /*
