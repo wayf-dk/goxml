@@ -452,7 +452,7 @@ func ExampleXSW8() {
 	// verify: <nil>
 }
 
-func xExampleQueryDashP_11() {
+func xExampleQueryDashP11() {
 	for range [1]int{} {
 
 		xp := NewXpFromFile("testdata/response.xml")
@@ -478,7 +478,7 @@ func xExampleQueryDashP_11() {
 	// anton
 }
 
-func ExampleQueryDashP_2() {
+func ExampleQueryDashP2() {
 	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
 	xp.QueryDashP(nil, `/samlp:Response/@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
@@ -502,7 +502,7 @@ func ExampleQueryDashP_2() {
 	// banton
 }
 
-func ExampleQueryDashP_3() {
+func ExampleQueryDashP3() {
 	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
 	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
