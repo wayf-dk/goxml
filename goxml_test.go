@@ -43,9 +43,7 @@ func printHashedDom(xp *Xp) {
 	fmt.Println(base64.StdEncoding.EncodeToString(append(hash[:])))
 }
 
-/**
-ExampleC14NWithComment does the canonilisation with comment in response
-**/
+/*ExampleC14NWithComment does the canonilisation with comment in response*/
 func ExampleC14NWithComment() {
 	xp := NewXpFromFile("testdata/response.xml")
 	printHashedDom(xp)
