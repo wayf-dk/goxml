@@ -118,6 +118,9 @@ var (
 	// persistent cache of compiled schemas
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
+
+	re = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
+	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
 )
 
 /**
@@ -475,8 +478,6 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	if context == nil {
 		context, _ = xp.Doc.DocumentElement()
 	}
-	re := regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
-	re2 := regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
 	path := re.FindAllStringSubmatch(query, -1)
 	if query[0] == '/' {
 		var buffer bytes.Buffer
