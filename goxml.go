@@ -335,6 +335,7 @@ func (xp *Xp) Rm(context types.Node, path string) {
 			parent.(types.Element).RemoveAttribute(x.NodeName())
 		case types.Element:
 			parent.RemoveChild(x)
+		    x.Free()
 		}
 	}
 }
