@@ -638,6 +638,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 		return fmt.Errorf("no signature found")
 	}
 	signature := signaturelist[0]
+    defer RmElement(signature)
 
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
 	signedInfo := xp.Query(signature, "ds:SignedInfo")[0]
@@ -658,7 +659,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
-	isvalid = isvalid && contextDigestValueComputed == digestValue
+	isvalid = contextDigestValueComputed == digestValue
 	if !isvalid {
 		return fmt.Errorf("digest mismatch")
 	}
@@ -673,8 +674,6 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 			return
 		}
 	}
-
-    RmElement(signature)
 
 	return
 }
