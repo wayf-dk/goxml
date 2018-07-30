@@ -328,8 +328,8 @@ func (xp *Xp) DocGetRootElement() types.Node {
 }
 
 func (xp *Xp) Rm(context types.Node, path string) {
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
+//	libxml2Lock.Lock()
+//	defer libxml2Lock.Unlock()
 	for _, node := range xp.Query(context, path) {
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
@@ -347,6 +347,12 @@ func RmElement(element types.Node) {
 	defer libxml2Lock.Unlock()
     parent, _ := element.ParentNode()
     parent.RemoveChild(element)
+    element.Free()
+}
+
+func freeElement(element types.Node) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
     element.Free()
 }
 
@@ -638,7 +644,6 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 		return fmt.Errorf("no signature found")
 	}
 	signature := signaturelist[0]
-    defer RmElement(signature)
 
 	signatureValue := xp.Query1(signature, "ds:SignatureValue")
 	signedInfo := xp.Query(signature, "ds:SignedInfo")[0]
@@ -655,6 +660,9 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
+
+	context.RemoveChild(signature)
+	defer freeElement(signature)
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
