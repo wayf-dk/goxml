@@ -328,6 +328,8 @@ func (xp *Xp) DocGetRootElement() types.Node {
 }
 
 func (xp *Xp) Rm(context types.Node, path string) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
 	for _, node := range xp.Query(context, path) {
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
@@ -338,6 +340,13 @@ func (xp *Xp) Rm(context types.Node, path string) {
 		    x.Free()
 		}
 	}
+}
+
+func RemoveChild(parent, child) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+    parent.RemoveChild(child)
+    child.Free()
 }
 
 /*
@@ -645,8 +654,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
-	context.RemoveChild(signature)
-	signature.Free()
+    RemoveChild(context, signature)
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
@@ -719,8 +727,7 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err
 	ec, _ := ee.Doc.DocumentElement()
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
-	parent.RemoveChild(context)
-	context.Free()
+	RemoveChild(parent, context)
 	return
 }
 
