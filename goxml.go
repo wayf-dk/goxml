@@ -646,7 +646,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
 	context.RemoveChild(signature)
-	//defer signature.Free()
+	signature.Free()
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
@@ -720,7 +720,7 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
 	parent.RemoveChild(context)
-	//defer context.Free()
+	context.Free()
 	return
 }
 
