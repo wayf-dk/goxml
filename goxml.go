@@ -342,11 +342,12 @@ func (xp *Xp) Rm(context types.Node, path string) {
 	}
 }
 
-func RemoveChild(parent, child) {
+func RmElement(element types.Node) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-    parent.RemoveChild(child)
-    child.Free()
+    parent, _ := element.ParentNode()
+    parent.RemoveChild(element)
+    element.Free()
 }
 
 /*
@@ -654,7 +655,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
-    RemoveChild(context, signature)
+    RmElement(signature)
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
@@ -722,12 +723,11 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey, ee *Xp) (err
 
 	ee.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(encryptedSessionkey), nil)
 	ee.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
-	parent, _ := context.ParentNode()
 
 	ec, _ := ee.Doc.DocumentElement()
 	ec = xp.CopyNode(ec, 1)
 	context.AddPrevSibling(ec)
-	RemoveChild(parent, context)
+	RmElement(context)
 	return
 }
 
