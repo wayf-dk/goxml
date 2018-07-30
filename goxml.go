@@ -655,8 +655,6 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
-    RmElement(signature)
-
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
@@ -675,6 +673,8 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 			return
 		}
 	}
+
+    RmElement(signature)
 
 	return
 }
