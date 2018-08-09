@@ -846,9 +846,9 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 		return nil, Wrap(err)
 	}
 
-	plaintext, err := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
+	plaintext, err := decrypt([]byte(sessionkey), ciphertextbyte)
 	if err != nil {
-		return nil, Wrap(err)
+		return nil, WrapWithXp(err, xp)
 	}
 
 	return NewXp(plaintext), nil
