@@ -238,6 +238,15 @@ func ExampleXSW1() {
 	// verify: ID mismatch
 }
 
+func ExampleCopyNode() {
+    xp := NewXpFromFile("testdata/response.xml")
+	response := xp.Query(nil, "/samlp:Response[1]")[0]
+	cpNode := xp.CopyNode(response, 2)
+	fmt.Println(cpNode)
+	// Output:
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:zzz="urn:oasis:names:tc:SAML:2.0:assertion" ID="_229827eaf5c5b8a7b49b3eb6b87e2bc5c564e49b8a" Version="2.0" IssueInstant="2017-06-27T13:17:46Z" Destination="https://wayfsp.wayf.dk/ss/module.php/saml/sp/saml2-acs.php/default-sp" InResponseTo="_1b83ac6f594b5a8c090e6559b4bf93195e5e766735"/>
+}
+
 func ExampleXSW2() {
 	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
@@ -513,27 +522,27 @@ func ExampleQueryDashP3() {
 	// Output:
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+    //     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+    //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
     //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
     //                     banton
     //                 </saml:AuthenticatingAuthority>
-	//       </saml:AuthnContext>
-	//     </saml:AuthnStatement>
-	//   </saml:Assertion>
-	// </samlp:Response>
-	// banton
+    //             </saml:AuthnContext>
+    //         </saml:AuthnStatement>
+    //     </saml:Assertion>
+    // </samlp:Response>
+    // banton
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//     </saml:AuthnStatement>
-	//   </saml:Assertion>
-	// </samlp:Response>
+    //     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    //             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+    //         </saml:AuthnStatement>
+    //     </saml:Assertion>
+    // </samlp:Response>
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }
