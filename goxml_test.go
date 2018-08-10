@@ -522,27 +522,27 @@ func ExampleQueryDashP3() {
 	// Output:
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-    //     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
     //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
     //                     banton
     //                 </saml:AuthenticatingAuthority>
-    //             </saml:AuthnContext>
-    //         </saml:AuthnStatement>
-    //     </saml:Assertion>
-    // </samlp:Response>
-    // banton
+	//             </saml:AuthnContext>
+	//         </saml:AuthnStatement>
+	//     </saml:Assertion>
+	// </samlp:Response>
+	// banton
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-    //     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //         </saml:AuthnStatement>
-    //     </saml:Assertion>
-    // </samlp:Response>
+	//     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+	//         </saml:AuthnStatement>
+	//     </saml:Assertion>
+	// </samlp:Response>
     // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }

@@ -67,6 +67,7 @@ type (
 		C     []string
 		PC    []uintptr `json:"-"`
 		Cause error
+		Xp *Xp `json:"-"`
 	}
 )
 
@@ -147,7 +148,7 @@ func NewWerror(ctx ...string) Werror {
 	return x
 }
 
-func Wrap(err error, ctx ...string) error {
+func Wrap(err error, ctx ...string) Werror {
 	switch x := err.(type) {
 	case Werror:
 		x.C = append(x.C, ctx...)
@@ -157,6 +158,12 @@ func Wrap(err error, ctx ...string) error {
 		werr.Cause = err
 		return Wrap(werr, ctx...)
 	}
+}
+
+func WrapWithXp(err error, xp *Xp, ctx ...string) error {
+    werr := Wrap(err, ctx...)
+    werr.Xp = xp
+    return werr
 }
 
 func PublicError(e Werror, ctx ...string) error {
@@ -854,9 +861,9 @@ func (xp *Xp) Decrypt(context types.Node, privatekey, pw []byte) (x *Xp, err err
 		return nil, Wrap(err)
 	}
 
-	plaintext, err := decrypt([]byte(sessionkey), bytes.TrimSpace(ciphertextbyte))
+	plaintext, err := decrypt([]byte(sessionkey), ciphertextbyte)
 	if err != nil {
-		return nil, Wrap(err)
+		return nil, WrapWithXp(err, xp)
 	}
 
 	return NewXp(plaintext), nil
