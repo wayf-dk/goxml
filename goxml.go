@@ -94,6 +94,7 @@ var (
 		"mdrpi":      "urn:oasis:names:tc:SAML:metadata:rpi",
 		"mdui":       "urn:oasis:names:tc:SAML:metadata:ui",
 		"saml":       "urn:oasis:names:tc:SAML:2.0:assertion",
+		"saml1":      "urn:oasis:names:tc:SAML:1.0:assertion",
 		"samlp":      "urn:oasis:names:tc:SAML:2.0:protocol",
 		"sdss":       "http://sdss.ac.uk/2006/06/WAYF",
 		"shibmd":     "urn:mace:shibboleth:metadata:1.0",
