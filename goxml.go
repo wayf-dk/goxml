@@ -633,7 +633,7 @@ func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo
 	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
-	id := xp.Query1(context, "@ID")
+	id := xp.Query1(context, "@ID | @AssertionID")
 
 	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before)
 	xp.QueryDashP(signedInfo, `/ds:CanonicalizationMethod/@Algorithm`, "http://www.w3.org/2001/10/xml-exc-c14n#", nil)
