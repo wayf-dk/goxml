@@ -67,7 +67,7 @@ type (
 		C     []string
 		PC    []uintptr `json:"-"`
 		Cause error
-		Xp *Xp `json:"-"`
+		Xp    *Xp `json:"-"`
 	}
 )
 
@@ -121,7 +121,7 @@ var (
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
 
-	re = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
+	re  = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
 	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
 )
 
@@ -162,9 +162,9 @@ func Wrap(err error, ctx ...string) Werror {
 }
 
 func WrapWithXp(err error, xp *Xp, ctx ...string) error {
-    werr := Wrap(err, ctx...)
-    werr.Xp = xp
-    return werr
+	werr := Wrap(err, ctx...)
+	werr.Xp = xp
+	return werr
 }
 
 func PublicError(e Werror, ctx ...string) error {
@@ -342,8 +342,8 @@ func (xp *Xp) DocGetRootElement() types.Node {
   RM removes the node
 */
 func (xp *Xp) Rm(context types.Node, path string) {
-//	libxml2Lock.Lock()
-//	defer libxml2Lock.Unlock()
+	//	libxml2Lock.Lock()
+	//	defer libxml2Lock.Unlock()
 	for _, node := range xp.Query(context, path) {
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
@@ -351,7 +351,7 @@ func (xp *Xp) Rm(context types.Node, path string) {
 			parent.(types.Element).RemoveAttribute(x.NodeName())
 		case types.Element:
 			parent.RemoveChild(x)
-		    x.Free()
+			x.Free()
 		}
 	}
 }
@@ -362,9 +362,9 @@ func (xp *Xp) Rm(context types.Node, path string) {
 func RmElement(element types.Node) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-    parent, _ := element.ParentNode()
-    parent.RemoveChild(element)
-    element.Free()
+	parent, _ := element.ParentNode()
+	parent.RemoveChild(element)
+	element.Free()
 }
 
 /*
@@ -373,7 +373,7 @@ func RmElement(element types.Node) {
 func freeElement(element types.Node) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-    element.Free()
+	element.Free()
 }
 
 /*

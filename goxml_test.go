@@ -184,23 +184,23 @@ func ExampleSignAndValidate() {
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
 	pub := []*rsa.PublicKey{&priv.PublicKey}
 
-    for _, hashfunc := range []string{"sha256", "sha1"} {
-        xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", hashfunc)
-	assertion = xp.Query(nil, "saml:Assertion[1]")[0]
+	for _, hashfunc := range []string{"sha256", "sha1"} {
+		xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", hashfunc)
+		assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
-	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm"))
-	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:SignatureMethod/@Algorithm"))
-	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue"))
-	fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignatureValue"))
+		fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm"))
+		fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:SignatureMethod/@Algorithm"))
+		fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue"))
+		fmt.Println(xp.Query1(nil, "saml:Assertion/ds:Signature/ds:SignatureValue"))
 
-	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
-    }
+		fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
+	}
 
 	// Output:
 	// http://www.w3.org/2001/04/xmlenc#sha256
 	// http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
 	// 4+l1oINdPA8pA7YJpaykq9KsJObgJgkkufhIUOPqOE0=
-    // eTlL9mzLOkH9wMuwdxIxgAi7QfIYvvqHWd8Icb19I7/ZfuCYNXsfJY4MbSiefL5jSOKQB5tDN8FlV/263N4z0nHZ1vsns/HBKPCP8uJBcSzliJC+8XSUXdGaWz7jGPl1fLoqA1NhxbWXZFC/WoaVnYnPXlY1BR+OPa8Q9k2gu89xosx3gbkYv93CpKIRfyputxtqxXa1gNX59Gcp4hjbpeSF6FPSQ55BS0pIuxZ4+N1xsrJx93+NOdpxZ+Vimx7y3iwtO/vNVsvIEJNgv9w1Tfz6G/l3JYSsqQYZyzOA3m8mzA+KfoL9nEZuuoNmF12cs7QnG8eYWplbtUyuKao8Zg==
+	// eTlL9mzLOkH9wMuwdxIxgAi7QfIYvvqHWd8Icb19I7/ZfuCYNXsfJY4MbSiefL5jSOKQB5tDN8FlV/263N4z0nHZ1vsns/HBKPCP8uJBcSzliJC+8XSUXdGaWz7jGPl1fLoqA1NhxbWXZFC/WoaVnYnPXlY1BR+OPa8Q9k2gu89xosx3gbkYv93CpKIRfyputxtqxXa1gNX59Gcp4hjbpeSF6FPSQ55BS0pIuxZ4+N1xsrJx93+NOdpxZ+Vimx7y3iwtO/vNVsvIEJNgv9w1Tfz6G/l3JYSsqQYZyzOA3m8mzA+KfoL9nEZuuoNmF12cs7QnG8eYWplbtUyuKao8Zg==
 	// verify: <nil>
 	// http://www.w3.org/2000/09/xmldsig#sha1
 	// http://www.w3.org/2000/09/xmldsig#rsa-sha1
@@ -239,7 +239,7 @@ func ExampleXSW1() {
 }
 
 func ExampleCopyNode() {
-    xp := NewXpFromFile("testdata/response.xml")
+	xp := NewXpFromFile("testdata/response.xml")
 	response := xp.Query(nil, "/samlp:Response[1]")[0]
 	cpNode := xp.CopyNode(response, 2)
 	fmt.Println(cpNode)
@@ -520,31 +520,31 @@ func ExampleQueryDashP3() {
 	fmt.Print(xp.PP())
 
 	// Output:
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-    //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
 	//     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
 	//         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
 	//             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
 	//                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
 	//                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-    //                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    //                     banton
-    //                 </saml:AuthenticatingAuthority>
+	//                 <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+	//                     banton
+	//                 </saml:AuthenticatingAuthority>
 	//             </saml:AuthnContext>
 	//         </saml:AuthnStatement>
 	//     </saml:Assertion>
 	// </samlp:Response>
 	// banton
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-    //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
 	//     <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
 	//         <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
 	//             <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
 	//         </saml:AuthnStatement>
 	//     </saml:Assertion>
 	// </samlp:Response>
-    // <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-    //                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
+	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }
 
 func ExampleEncryptAndDecrypt() {
