@@ -889,7 +889,11 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err e
 		}
 	}
 	if privatekey, err = x509.ParsePKCS1PrivateKey(derbytes); err != nil {
-		return nil, Wrap(err)
+		var pk interface{}
+		if pk, err = x509.ParsePKCS8PrivateKey(derbytes); err != nil {
+			return nil, Wrap(err)
+		}
+		privatekey = pk.(*rsa.PrivateKey)
 	}
 	return
 }
