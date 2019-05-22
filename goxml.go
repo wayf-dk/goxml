@@ -483,7 +483,7 @@ func (xp *Xp) QueryBool(context types.Node, path string) bool {
 }
 
 /*
-  QueryNumber evaluates an xpath element that is XML boolean ie 1 or true - '.' works for both elements and attributes
+  QueryXMLBool evaluates an xpath element that is XML boolean ie 1 or true - '.' works for both elements and attributes
 */
 func (xp *Xp) QueryXMLBool(context types.Node, path string) bool {
 	return xp.QueryBool(context, "boolean("+path+"[normalize-space(.)='1' or normalize-space(.)='true'])")
