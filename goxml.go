@@ -487,7 +487,13 @@ func (xp *Xp) QueryBool(context types.Node, path string) bool {
   QueryXMLBool evaluates an xpath element that is XML boolean ie 1 or true - '.' works for both elements and attributes
 */
 func (xp *Xp) QueryXMLBool(context types.Node, path string) bool {
-	return xp.QueryBool(context, "boolean("+path+"[normalize-space(.)='1' or normalize-space(.)='true'])")
+	switch strings.TrimSpace(xp.Query1(context, path)) {
+	case "1", "true":
+		return true
+	default:
+	    return false
+	}
+//	return xp.QueryBool(context, "boolean("+path+"[normalize-space(.)='1' or normalize-space(.)='true'])")
 }
 
 /*
@@ -704,6 +710,8 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	}
 	signatureMethod := xp.Query1(signedInfo, "ds:SignatureMethod/@Algorithm")
 	signedInfoDigest := Hash(Algos[signatureMethod].Algo, signedInfoC14n)
+
+    log.Printf("SigAlg: %s %s %s %s\n", xp.QueryString(context, "local-name(.)"), xp.Query1(context, "saml:Issuer"), digestMethod, signatureMethod)
 
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 
