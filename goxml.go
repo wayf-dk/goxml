@@ -697,10 +697,11 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
+    nextsibling, _ := signature.NextSibling()
 	context.RemoveChild(signature)
-	defer freeElement(signature)
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
+	nextsibling.AddPrevSibling(signature)
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
 	isvalid = contextDigestValueComputed == digestValue
