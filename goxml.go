@@ -56,10 +56,9 @@ type (
 
 	// algo xmlsec digest and signature algorith and their Go name
 	algo struct {
-		digest    string
-		Signature string
-		Algo      crypto.Hash
-		derprefix string
+		Short, digest, Signature    string
+		Algo                        crypto.Hash
+		derprefix                   string
 	}
 
 	Werror struct {
@@ -76,10 +75,10 @@ type (
 */
 var (
 	Algos = map[string]algo{
-//		"":       {"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
-		"":   {"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
-		"sha1":   {"http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
-		"sha256": {"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
+		"sha1":   {"sha1", "http://www.w3.org/2000/09/xmldsig#sha1", "http://www.w3.org/2000/09/xmldsig#rsa-sha1", crypto.SHA1, "\x30\x21\x30\x09\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00\x04\x14"},
+		"sha256": {"sha256", "http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
+		"sha384": {"sha384", "https://www.w3.org/2001/04/xmldsig-more#sha384", "https://www.w3.org/2001/04/xmldsig-more#rsa-sha384", crypto.SHA384, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30"},
+		"sha512": {"sha512", "https://www.w3.org/2001/04/xmlenc#sha512", "https://www.w3.org/2001/04/xmldsig-more#rsa-sha512", crypto.SHA512, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"},
 		//"ecdsa-sha256" : algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
 	}
 
