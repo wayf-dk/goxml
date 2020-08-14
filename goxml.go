@@ -36,7 +36,7 @@ import (
 	"github.com/wayf-dk/go-libxml2/xpath"
 	"github.com/wayf-dk/go-libxml2/xsd"
 	"github.com/wayf-dk/goeleven/src/goeleven"
-	"github.com/y0ssar1an/q"
+	"q"
 )
 
 var (
