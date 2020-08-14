@@ -15,7 +15,6 @@ import (
 	"strings"
 	//"time"
 	//"testing"
-	"q"
 )
 
 type Testparams struct {
@@ -35,7 +34,6 @@ type Testparams struct {
 
 var (
 	_ = log.Printf // For debugging; delete when done.
-	_ = q.Q
 )
 
 func printHashedDom(xp *Xp) {
