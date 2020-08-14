@@ -15,7 +15,7 @@ import (
 	"strings"
 	//"time"
 	//"testing"
-	"github.com/y0ssar1an/q"
+	"q"
 )
 
 type Testparams struct {
