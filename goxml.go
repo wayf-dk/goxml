@@ -459,12 +459,30 @@ func (xp *Xp) QueryXMLBool(context types.Node, path string) bool {
 	//	return xp.QueryBool(context, "boolean("+path+"[normalize-space(.)='1' or normalize-space(.)='true'])")
 }
 
+func (xp *Xp) find(context types.Node, path string) (res types.XPathResult) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	if context == nil {
+		context, _ = xp.Doc.DocumentElement()
+	}
+	xp.Xpath.SetContextNode(context)
+	res, _ = xp.Xpath.Find(path)
+	return
+}
+
 // QueryMulti function to get the content of the nodes from a xpath query
 // as a slice of strings
 func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
-	nodes := xp.Query(context, path)
-	for _, node := range nodes {
-		res = append(res, strings.TrimSpace(node.NodeValue()))
+	x := xp.find(context, path)
+	switch x.Type() {
+	case xpath.NodeSetType:
+        for _, node := range x.NodeList() {
+            res = append(res, strings.TrimSpace(node.NodeValue()))
+        }
+	case xpath.StringType:
+		res = []string{clib.XMLXPathObjectString(x)}
+	default:
+	    res = []string{fmt.Sprintf("%v", x)}
 	}
 	return
 }
