@@ -654,7 +654,7 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 
 	signedInfoC14n := xp.C14n(signedInfo, "")
 	digestValue := xp.Query1(signedInfo, "ds:Reference/ds:DigestValue")
-	ID := xp.Query1(context, "@ID")
+	ID := xp.Query1(context, "@ID | @AssertionID")
 	URI := xp.Query1(signedInfo, "ds:Reference/@URI")
 	isvalid := "#"+ID == URI
 	if !isvalid {
@@ -669,7 +669,13 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	context.RemoveChild(signature)
 
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
-	nextsibling.AddPrevSibling(signature)
+
+	if nextsibling != nil {
+        	nextsibling.AddPrevSibling(signature)
+	} else {
+        context.AddChild(signature)
+	}
+
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
 
 	isvalid = contextDigestValueComputed == digestValue
