@@ -469,13 +469,13 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	x := xp.find(context, path)
 	switch x.Type() {
 	case xpath.NodeSetType:
-        for _, node := range x.NodeList() {
-            res = append(res, strings.TrimSpace(node.NodeValue()))
-        }
+		for _, node := range x.NodeList() {
+			res = append(res, strings.TrimSpace(node.NodeValue()))
+		}
 	case xpath.StringType:
 		res = []string{clib.XMLXPathObjectString(x)}
 	default:
-	    res = []string{fmt.Sprintf("%v", x)}
+		res = []string{fmt.Sprintf("%v", x)}
 	}
 	x.Free()
 	return
@@ -667,9 +667,9 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
 
 	if nextsibling != nil {
-        	nextsibling.AddPrevSibling(signature)
+		nextsibling.AddPrevSibling(signature)
 	} else {
-        context.AddChild(signature)
+		context.AddChild(signature)
 	}
 
 	contextDigestValueComputed := base64.StdEncoding.EncodeToString(contextDigest)
