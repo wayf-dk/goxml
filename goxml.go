@@ -350,15 +350,6 @@ func RmElement(element types.Node) {
 	element.Free()
 }
 
-/*
-  freeElement refers to freeing the memory
-*/
-func freeElement(element types.Node) {
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
-	element.Free()
-}
-
 // CopyNode - copies the node
 // to-do make go-libxml2 accept extended param
 // to-do remove it from Xp
