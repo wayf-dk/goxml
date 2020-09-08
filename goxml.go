@@ -564,6 +564,13 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	return context
 }
 
+func (xp *Xp) QueryDashPOptional(context types.Node, query string, data string, before types.Node) types.Node {
+    if data != "" {
+        return xp.QueryDashP(context, query, data, before)
+    }
+    return nil
+}
+
 // CreateElementNS Create an element with the given namespace
 func (xp *Xp) createElementNS(prefix, element string, context types.Node, before types.Node) (newcontext types.Element) {
 
