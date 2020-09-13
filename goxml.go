@@ -330,9 +330,8 @@ func (xp *Xp) DocGetRootElement() types.Node {
 
 // Rm deletes the node
 func (xp *Xp) Rm(context types.Node, path string) {
-	libxml2Lock.Lock()
-	defer libxml2Lock.Unlock()
 	for _, node := range xp.Query(context, path) {
+	    libxml2Lock.Lock()
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
 		case types.Attribute:
@@ -341,6 +340,7 @@ func (xp *Xp) Rm(context types.Node, path string) {
 			parent.RemoveChild(x)
 		}
 		node.Free()
+        libxml2Lock.Unlock()
 	}
 }
 
