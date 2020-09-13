@@ -120,6 +120,7 @@ var (
 	// persistent cache of compiled schemas
 	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
+	qdpLock     sync.Mutex
 
 	re  = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
 	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
@@ -494,6 +495,9 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 // QueryDashP generative xpath query - ie. mkdir -p for xpath ...
 // Understands simple xpath expressions including indexes and attribute values
 func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
+	qdpLock.Lock()
+	defer qdpLock.Unlock()
+
 	// split in path elements, an element might include an attribute expression incl. value eg.
 	// /md:EntitiesDescriptor/md:EntityDescriptor[@entityID="https://wayf.wayf.dk"]/md:SPSSODescriptor
 	var attrContext types.Node
