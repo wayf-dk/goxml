@@ -752,7 +752,7 @@ func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey) (err error) 
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (zz *Xp, err error) {
+func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err error) {
 	context := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
 	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
 	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
@@ -775,10 +775,10 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (zz 
 		case "http://www.w3.org/2009/xmlenc11#mgf1sha256":
 			mgfAlgorithm = crypto.SHA256
 		default:
-			return nil, NewWerror("unsupported MGF", "MGF: "+MGF)
+			return NewWerror("unsupported MGF", "MGF: "+MGF)
 		}
 	default:
-		return nil, NewWerror("unsupported keyEncryptionMethod", "keyEncryptionMethod: "+keyEncryptionMethod)
+		return NewWerror("unsupported keyEncryptionMethod", "keyEncryptionMethod: "+keyEncryptionMethod)
 	}
 
 	switch digestMethod {
@@ -793,7 +793,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (zz 
 	case "":
 		digestAlgorithm = crypto.SHA1
 	default:
-		return nil, NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
+		return NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
 	}
 
 	switch encryptionMethod {
@@ -802,21 +802,21 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (zz 
 	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
 		decrypt = decryptGCM
 	default:
-		return nil, NewWerror("unsupported encryptionMethod", "encryptionMethod: "+encryptionMethod)
+		return NewWerror("unsupported encryptionMethod", "encryptionMethod: "+encryptionMethod)
 	}
 
 	encryptedKeybyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encryptedKey))
 	if err != nil {
-		return nil, Wrap(err)
+		return Wrap(err)
 	}
 
 	OAEPparamsbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(OAEPparams))
 	if err != nil {
-		return nil, Wrap(err)
+		return Wrap(err)
 	}
 
 	if digestAlgorithm != mgfAlgorithm {
-		return nil, errors.New("digestMethod != keyEncryptionMethod not supported")
+		return errors.New("digestMethod != keyEncryptionMethod not supported")
 	}
 
 	var sessionkey []byte
@@ -826,45 +826,45 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (zz 
 	case false:
 		priv, err := Pem2PrivateKey(privatekey, pw)
 		if err != nil {
-			return nil, Wrap(err)
+			return Wrap(err)
 		}
 		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv, encryptedKeybyte, OAEPparamsbyte)
 		if err != nil {
-			return nil, Wrap(err)
+			return Wrap(err)
 		}
 	}
 
 	if err != nil {
-		return nil, Wrap(err)
+		return Wrap(err)
 	}
 
 	switch len(sessionkey) {
 	case 16, 24, 32:
 	default:
-		return nil, fmt.Errorf("Unsupported keylength for AES %d", len(sessionkey))
+		return fmt.Errorf("Unsupported keylength for AES %d", len(sessionkey))
 	}
 
 	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
 	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
 	if err != nil {
-		return nil, Wrap(err)
+		return Wrap(err)
 	}
 
 	plaintext, err := decrypt([]byte(sessionkey), ciphertextbyte)
 	if err != nil {
-		return nil, WrapWithXp(err, xp)
+		return WrapWithXp(err, xp)
 	}
 
     response, _ := encryptedAssertion.ParentNode()
     decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
 	if err != nil {
-		return nil, WrapWithXp(err, xp)
+		return WrapWithXp(err, xp)
 	}
 
 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
 	RmElement(encryptedAssertion)
 
-    return nil, err
+    return err
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
