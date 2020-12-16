@@ -633,41 +633,22 @@ func TestDecryptShibResponse(t *testing.T) {
 	gotExpected(shibresponse.DomSha1SumToBase64(), "ZWiDjYoc03iQr5or7lpvv6Nb8vc=", "Bad sum", t)
 }
 
-// func ExampleDecryptNemloginResponse() {
-// 	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
-//
-// 	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-//
-// 	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
-// 	encryptedData := nemloginresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-// 	decryptedAssertion, _ := nemloginresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-//
-// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-// 	parent, _ := encryptedAssertion.ParentNode()
-// 	parent.RemoveChild(encryptedAssertion)
-//
-// 	printHashedDom(nemloginresponse)
-// 	/*
-// 		signatures := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
-// 		// don't do this in real life !!!
-// 		certs := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
-//
-// 		if len(signatures) == 1 {
-// 		    // fix - using package above us
-// 			if err = gosaml.VerifySign(nemloginresponse, certs, signatures); err != nil {
-// 				log.Panic(err)
-// 			}
-// 		}
-// 		fmt.Println(nemloginresponse.PP())
-// 	*/
-//
-// 	// Output:
-// 	// GuWLBRb1kEiwx/86+R0RmQnI8Mw=
-// }
+func TestDecryptNemloginResponse(t *testing.T) {
+
+	// Build document
+	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
+
+	// Decrypt
+	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
+	if err != nil {
+		t.Error(err)
+	}
+	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+	nemloginresponse.Decrypt(encryptedAssertion.(types.Element), privatekey, []byte("-"))
+
+	// Test
+	gotExpected(nemloginresponse.DomSha1SumToBase64(), "GuWLBRb1kEiwx/86+R0RmQnI8Mw=", "Bad sum", t)
+}
 
 // func ExampleDecrypt() { //OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
 //
