@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 	//"runtime"
-	// "strings"
+	"strings"
 	//"time"
 	"testing"
 )
@@ -650,56 +650,44 @@ func TestDecryptNemloginResponse(t *testing.T) {
 	gotExpected(nemloginresponse.DomSha1SumToBase64(), "GuWLBRb1kEiwx/86+R0RmQnI8Mw=", "Bad sum", t)
 }
 
-// func ExampleDecrypt() { //OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
-//
-// 	tests := []string{
-// 		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
-// 		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml",
-// 		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml",
-// 		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml",
-// 	}
-//
-// 	for _, test := range tests {
-// 		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
-// 		parts := strings.Split(test, "__")
-//
-// 		pemFile := "testdata/private.key.pem"
-// 		pemBlock, _ := ioutil.ReadFile(pemFile)
-// 		xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
-// 		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
-//
-// 		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
-// 		if err != nil {
-// 			//if err == rsa.ErrDecryption {
-// 			pemFile := "testdata/w3c/" + parts[1] + ".pem"
-// 			pemBlock, _ := ioutil.ReadFile(pemFile)
-// 			xp2 := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
-// 			encryptedData := xp2.Query(nil, "//dummy/xenc:EncryptedData")[0]
-//
-// 			decrypted, err = xp2.Decrypt(encryptedData, pemBlock, []byte("-"))
-// 			if err != nil {
-// 				fmt.Println("Error =", err)
-// 			}
-// 		}
-// 		if err != nil {
-// 			fmt.Println("Error =", err)
-// 		}
-//
-// 		if decrypted != nil {
-// 			printHashedDom(decrypted)
-// 		} else {
-// 			fmt.Println(decrypted)
-// 		}
-// 	}
-// 	// Output:
-// 	// 6naYuUBtlCi/Yf1/DIZgJXIghWM=
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	// <nil>
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	// <nil>
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	// Error = digestMethod != keyEncryptionMethod not supported
-// 	//<nil>
-// }
+func TestDecryptW3C(t *testing.T) {
+
+	// OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
+
+	test := map[string]bool{
+		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml": true,
+		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml": false,
+		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml": false,
+		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml": false,
+	}
+
+	for test, supported := range test {
+
+		// Load private key
+		parts := strings.Split(test, "__")
+		pemFile := "testdata/w3c/" + parts[1] + ".pem"
+		pemBlock, _ := ioutil.ReadFile(pemFile)
+
+		// Build document
+		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
+		// We need 2 layers of test nodes around the EncryptedData node
+		// Otherwise the parent of the EncryptedData becomes DocumentNode and
+		// ParentNode throws an "unknown node" error.
+		xp2 := NewXpFromString("<test><test>" + string(cipherText) + "</test></test>")
+
+		err := xp2.Decrypt(xp2.Query(nil, "/test/test")[0], pemBlock, []byte("-"))
+		if supported {
+			if err != nil {
+				t.Error(test, err)
+			}
+			// Free decrypted data of parent test node and compare with plaintext
+			got := NewXpFromNode(xp2.Query(nil, "/test/node()")[0]).DomSha1SumToBase64()
+			expected := NewXpFromFile("testdata/w3c/plaintext.xml").DomSha1SumToBase64()
+			gotExpected(got, expected, "Bad sum", t)
+		} else {
+			if err == nil || err.Error() != "digestMethod != keyEncryptionMethod not supported" {
+				t.Error(test, err)
+			}
+		}
+	}
+}
