@@ -593,20 +593,35 @@ func TestEncryptAndDecrypt(t *testing.T) {
 	}
 }
 
-// func ExampleValidateSchema() {
-// 	xp := NewXpFromFile("testdata/response.xml")
-// 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
-// 	// make the document schema-invalid
-// 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
-// 	parent, _ := issuer.ParentNode()
-// 	parent.RemoveChild(issuer)
-// 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
-// 	// Output:
-// 	// [] <nil>
-// 	// [Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).] schema validation failed
-//
-// }
-//
+func TestValidateSchema(t *testing.T) {
+
+	// Build document
+	xp := NewXpFromFile("testdata/response.xml")
+	errs, err := xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
+
+	// Test
+	if expected := 0; len(errs) != expected || err != nil {
+		t.Errorf("Unexpected number of errors, was %d expected %d", len(errs), expected)
+	}
+
+	// Make the document schema-invalid
+	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
+	parent, _ := issuer.ParentNode()
+	parent.RemoveChild(issuer)
+	errs, err = xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
+
+	// Test
+	if expected := 1; len(errs) != expected {
+		t.Errorf("Unexpected number of errors, was %d expected %d", len(errs), expected)
+	}
+	if expected := "Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer )."; errs[0].Error() != expected {
+		t.Errorf("Unexpected error, was %s expected %s", errs[0].Error(), expected)
+	}
+	if expected := "schema validation failed"; err.Error() != expected {
+		t.Errorf("Unexpected error, was %s expected %s", errs[0].Error(), expected)
+	}
+}
+
 // func ExampleDecryptShibResponse() {
 // 	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
 //
