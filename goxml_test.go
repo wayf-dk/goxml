@@ -2,9 +2,7 @@ package goxml
 
 import (
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"github.com/wayf-dk/go-libxml2/types"
@@ -37,8 +35,7 @@ var (
 )
 
 func printHashedDom(xp *Xp) {
-	hash := sha1.Sum([]byte(xp.C14n(nil, "")))
-	fmt.Println(base64.StdEncoding.EncodeToString(append(hash[:])))
+	fmt.Println(xp.DomSha1SumToBase64())
 }
 
 // ExampleC14NWithComment does the canonilisation with comment in response.
@@ -601,7 +598,7 @@ func TestValidateSchema(t *testing.T) {
 
 	// Test
 	if expected := 0; len(errs) != expected || err != nil {
-		t.Errorf("Unexpected number of errors, was %d expected %d", len(errs), expected)
+		t.Errorf("Unexpected number of errors; was %d expected %d", len(errs), expected)
 	}
 
 	// Make the document schema-invalid
@@ -612,52 +609,34 @@ func TestValidateSchema(t *testing.T) {
 
 	// Test
 	if expected := 1; len(errs) != expected {
-		t.Errorf("Unexpected number of errors, was %d expected %d", len(errs), expected)
+		t.Errorf("Unexpected number of errors; was %d expected %d", len(errs), expected)
 	}
 	if expected := "Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer )."; errs[0].Error() != expected {
-		t.Errorf("Unexpected error, was %s expected %s", errs[0].Error(), expected)
+		t.Errorf("Unexpected error; was %s expected %s", errs[0].Error(), expected)
 	}
 	if expected := "schema validation failed"; err.Error() != expected {
-		t.Errorf("Unexpected error, was %s expected %s", errs[0].Error(), expected)
+		t.Errorf("Unexpected error; was %s expected %s", errs[0].Error(), expected)
 	}
 }
 
-// func ExampleDecryptShibResponse() {
-// 	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
-//
-// 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-//
-// 	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
-// 	encryptedData := shibresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-// 	decryptedAssertion, _ := shibresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-//
-// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-// 	parent, _ := encryptedAssertion.ParentNode()
-// 	parent.RemoveChild(encryptedAssertion)
-//
-// 	printHashedDom(shibresponse)
-//
-// 	/*
-// 		signatures := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
-// 		// don't do this in real life !!!
-// 		certs := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
-//
-// 		if len(signatures) == 1 {
-// 		    // fix - using package above us
-// 			if err = gosaml.VerifySign(shibresponse, certs, signatures); err != nil {
-// 				log.Panic(err)
-// 			}
-// 		}
-// 		fmt.Println(shibresponse.PP())
-// 	*/
-//
-// 	// Output:
-// 	// ZWiDjYoc03iQr5or7lpvv6Nb8vc=
-// }
+func TestDecryptShibResponse(t *testing.T) {
+
+	// Build document
+	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
+
+	// Decrypt
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		t.Error(err)
+	}
+	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+	shibresponse.Decrypt(encryptedAssertion.(types.Element), privatekey, []byte("-"))
+
+	// Test
+	if expected := "ZWiDjYoc03iQr5or7lpvv6Nb8vc="; shibresponse.DomSha1SumToBase64() != expected {
+		t.Errorf("Bad sum; was %s expected %s", shibresponse.DomSha1SumToBase64(), expected)
+	}
+}
 
 // func ExampleDecryptNemloginResponse() {
 // 	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
