@@ -40,7 +40,7 @@ func printHashedDom(xp *Xp) {
 
 func gotExpected(was interface{}, expected interface{}, f string, t *testing.T) {
 	if was != expected {
-		t.Errorf(f + "; got %+v expected %+v", was, expected)
+		t.Errorf(f+"; got %+v expected %+v", was, expected)
 	}
 }
 
@@ -586,13 +586,13 @@ func TestEncryptAndDecrypt(t *testing.T) {
 
 	// Test
 	if before == encrypted {
-			t.Errorf("before == encrypted")
+		t.Errorf("before == encrypted")
 	}
 	if encrypted == after {
-			t.Errorf("encrypted == after")
+		t.Errorf("encrypted == after")
 	}
 	if before != after {
-			t.Errorf("before != after")
+		t.Errorf("before != after")
 	}
 }
 
@@ -655,9 +655,9 @@ func TestDecryptW3C(t *testing.T) {
 	// OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
 
 	test := map[string]bool{
-		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml": true,
-		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml": false,
-		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml": false,
+		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml":                    true,
+		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml":            false,
+		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml":         false,
 		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml": false,
 	}
 
