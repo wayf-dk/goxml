@@ -193,7 +193,7 @@ func ExampleSignAndValidate() {
 
 		fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 		// VerifySignature re-inserts the signature so we must remove it now
-	    assertion.RemoveChild(xp.Query(assertion, "ds:Signature[1]")[0])
+		assertion.RemoveChild(xp.Query(assertion, "ds:Signature[1]")[0])
 	}
 
 	// Output:
@@ -207,16 +207,16 @@ func ExampleSignAndValidate() {
 	// 4+l1oINdPA8pA7YJpaykq9KsJObgJgkkufhIUOPqOE0=
 	// eTlL9mzLOkH9wMuwdxIxgAi7QfIYvvqHWd8Icb19I7/ZfuCYNXsfJY4MbSiefL5jSOKQB5tDN8FlV/263N4z0nHZ1vsns/HBKPCP8uJBcSzliJC+8XSUXdGaWz7jGPl1fLoqA1NhxbWXZFC/WoaVnYnPXlY1BR+OPa8Q9k2gu89xosx3gbkYv93CpKIRfyputxtqxXa1gNX59Gcp4hjbpeSF6FPSQ55BS0pIuxZ4+N1xsrJx93+NOdpxZ+Vimx7y3iwtO/vNVsvIEJNgv9w1Tfz6G/l3JYSsqQYZyzOA3m8mzA+KfoL9nEZuuoNmF12cs7QnG8eYWplbtUyuKao8Zg==
 	// verify: <nil>
-    // https://www.w3.org/2001/04/xmldsig-more#sha384
-    // https://www.w3.org/2001/04/xmldsig-more#rsa-sha384
-    // 8eGAd4VP4Y5k0XRracuWXXOU7ZjzCbEYgVZM3AIBOSDBo9uIyVQqJBnDRvJ0Lx9H
-    // VBNsfS8JvfgeCmGa8uXKmK99Mp6fCCLLpUc7KGKo3PfqOr/82lYST51vHBgRoBe9fBTHY7Y7xXfDKbdftmDM+REIS/e2u7hX30Vv8Bgf8/C0QlJ6MHQXBi15hbLjqNyE95maY7uWUPwStasYikZtKmAyt7azTZ/h2E5+KuemlKzzkShvxIzIpkjJV6O9m2B3tEcs6jgSF0j3ktHZx1noKDuXtoZlM1WpDYHJpivvpEr6u50xGXY3T3/ABuFFtt0SEQ/Y+0QMx4QQiEBJSo7DhtM4nluHL4rXvN4lVyBBgd1ypy+l4tLLt2e8P0v9daZfSYN4FI8UzH3QDrGhimhEnA==
-    // verify: <nil>
-    // https://www.w3.org/2001/04/xmlenc#sha512
-    // https://www.w3.org/2001/04/xmldsig-more#rsa-sha512
-    // S1Jc/6AgPplPSLYKNss2bE5E+wR+gCEKazomuA3qf5DKk5KOU2KZUiucBHhe0zOKT4qdD11+gXd8f02MNSYiWQ==
-    // LamV9eA/fAQ0vDALDDW1Vpf4t94KNkXzUcJOVBsvAdLqjd6V3p8tzd8iLtLkmpu+KIzVnAKaVg5tx8qVkldu6dImc09Tox2SUTGEXj/6PNKrl49MuQINpzek4dmCI3txPf7FxTP/ck91k6/N2vvIZxgGQenI2QYLuH3h++GlbtQWIpo1CDadlFdsQ6VJASmuH5bo81ed2uLAUva4w4sNP6TMK32Mq48v8tOGCP60gBiXzHjoT4kEg1HBMVuIgR9SYfzXMo5okfv5MEZZ+BLlkQWgI5v0SEN8N14Im9j3CIceVw/ajOfyS72D99WgP7sxoFQIiui4jyLVgECF+jI/NQ==
-    // verify: <nil>
+	// https://www.w3.org/2001/04/xmldsig-more#sha384
+	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha384
+	// 8eGAd4VP4Y5k0XRracuWXXOU7ZjzCbEYgVZM3AIBOSDBo9uIyVQqJBnDRvJ0Lx9H
+	// VBNsfS8JvfgeCmGa8uXKmK99Mp6fCCLLpUc7KGKo3PfqOr/82lYST51vHBgRoBe9fBTHY7Y7xXfDKbdftmDM+REIS/e2u7hX30Vv8Bgf8/C0QlJ6MHQXBi15hbLjqNyE95maY7uWUPwStasYikZtKmAyt7azTZ/h2E5+KuemlKzzkShvxIzIpkjJV6O9m2B3tEcs6jgSF0j3ktHZx1noKDuXtoZlM1WpDYHJpivvpEr6u50xGXY3T3/ABuFFtt0SEQ/Y+0QMx4QQiEBJSo7DhtM4nluHL4rXvN4lVyBBgd1ypy+l4tLLt2e8P0v9daZfSYN4FI8UzH3QDrGhimhEnA==
+	// verify: <nil>
+	// https://www.w3.org/2001/04/xmlenc#sha512
+	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha512
+	// S1Jc/6AgPplPSLYKNss2bE5E+wR+gCEKazomuA3qf5DKk5KOU2KZUiucBHhe0zOKT4qdD11+gXd8f02MNSYiWQ==
+	// LamV9eA/fAQ0vDALDDW1Vpf4t94KNkXzUcJOVBsvAdLqjd6V3p8tzd8iLtLkmpu+KIzVnAKaVg5tx8qVkldu6dImc09Tox2SUTGEXj/6PNKrl49MuQINpzek4dmCI3txPf7FxTP/ck91k6/N2vvIZxgGQenI2QYLuH3h++GlbtQWIpo1CDadlFdsQ6VJASmuH5bo81ed2uLAUva4w4sNP6TMK32Mq48v8tOGCP60gBiXzHjoT4kEg1HBMVuIgR9SYfzXMo5okfv5MEZZ+BLlkQWgI5v0SEN8N14Im9j3CIceVw/ajOfyS72D99WgP7sxoFQIiui4jyLVgECF+jI/NQ==
+	// verify: <nil>
 
 }
 

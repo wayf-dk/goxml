@@ -331,7 +331,7 @@ func (xp *Xp) DocGetRootElement() types.Node {
 // Rm deletes the node
 func (xp *Xp) Rm(context types.Node, path string) {
 	for _, node := range xp.Query(context, path) {
-	    libxml2Lock.Lock()
+		libxml2Lock.Lock()
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
 		case types.Attribute:
@@ -340,7 +340,7 @@ func (xp *Xp) Rm(context types.Node, path string) {
 			parent.RemoveChild(x)
 		}
 		node.Free()
-        libxml2Lock.Unlock()
+		libxml2Lock.Unlock()
 	}
 }
 
@@ -474,8 +474,8 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 			res = append(res, strings.TrimSpace(node.NodeValue()))
 		}
 	case xpath.StringType:
-        res = []string{clib.XMLXPathObjectString(x)}
-    	default:
+		res = []string{clib.XMLXPathObjectString(x)}
+	default:
 		res = []string{fmt.Sprintf("%v", x)}
 	}
 	x.Free()
@@ -569,10 +569,10 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 }
 
 func (xp *Xp) QueryDashPOptional(context types.Node, query string, data string, before types.Node) types.Node {
-    if data != "" {
-        return xp.QueryDashP(context, query, data, before)
-    }
-    return nil
+	if data != "" {
+		return xp.QueryDashP(context, query, data, before)
+	}
+	return nil
 }
 
 // CreateElementNS Create an element with the given namespace
@@ -731,7 +731,7 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
 func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey) (err error) {
-    ects := xp.QueryDashP(nil, "saml:EncryptedAssertion/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", context)
+	ects := xp.QueryDashP(nil, "saml:EncryptedAssertion/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", context)
 	xp.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#aes256-gcm"]`, "", nil)
 	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
 
@@ -855,8 +855,8 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 		return WrapWithXp(err, xp)
 	}
 
-    response, _ := encryptedAssertion.ParentNode()
-    decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
+	response, _ := encryptedAssertion.ParentNode()
+	decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
 	if err != nil {
 		return WrapWithXp(err, xp)
 	}
@@ -864,7 +864,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
 	RmElement(encryptedAssertion)
 
-    return err
+	return err
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
