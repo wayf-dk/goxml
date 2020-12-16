@@ -14,7 +14,7 @@ import (
 	//"runtime"
 	// "strings"
 	//"time"
-	//"testing"
+	"testing"
 )
 
 type Testparams struct {
@@ -558,60 +558,41 @@ func ExampleQueryDashP3() {
 	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }
 
-// func ExampleEncryptAndDecrypt() {
-//
-// 	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
-// 	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
-// 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
-//
-// 	fmt.Print(xp.Doc.Dump(true))
-// 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-// 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-//
-// 	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
-// 	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
-// 	xp.Encrypt(assertion, &pk.PublicKey, ea)
-//
-// 	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
-// 	encryptedData := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-// 	decryptedAssertion, _ := xp.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-//
-// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-// 	parent, _ := encryptedAssertion.ParentNode()
-// 	parent.RemoveChild(encryptedAssertion)
-//
-// 	fmt.Print(xp.Doc.Dump(true))
-// 	// Output:
-// 	// <?xml version="1.0" encoding="UTF-8"?>
-// 	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-// 	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-// 	//       </saml:AuthnContext>
-// 	//     </saml:AuthnStatement>
-// 	//   </saml:Assertion>
-// 	// </samlp:Response>
-// 	// <?xml version="1.0" encoding="UTF-8"?>
-// 	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-// 	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//   <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//     <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-// 	//     </saml:AuthnContext>
-// 	//   </saml:AuthnStatement>
-// 	// </saml:Assertion>
-// 	// </samlp:Response>
-// }
-//
+func TestEncryptAndDecrypt(t *testing.T) {
+
+	// Build document
+	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
+	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
+	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
+	before := xp.PP()
+
+	// Encrypt
+	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
+	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
+	if err != nil {
+		log.Panic(err)
+	}
+	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
+	xp.Encrypt(assertion, &pk.PublicKey)
+	encrypted := xp.PP()
+
+	// Decrypt
+	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
+	xp.Decrypt(encryptedAssertion.(types.Element), privatekey, []byte("-"))
+	after := xp.PP()
+
+	// Test
+	if before == encrypted {
+			t.Errorf("before == encrypted")
+	}
+	if encrypted == after {
+			t.Errorf("encrypted == after")
+	}
+	if before != after {
+			t.Errorf("before != after")
+	}
+}
+
 // func ExampleValidateSchema() {
 // 	xp := NewXpFromFile("testdata/response.xml")
 // 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
