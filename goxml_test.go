@@ -38,6 +38,12 @@ func printHashedDom(xp *Xp) {
 	fmt.Println(xp.DomSha1SumToBase64())
 }
 
+func gotExpected(was interface{}, expected interface{}, f string, t *testing.T) {
+	if was != expected {
+		t.Errorf(f + "; got %+v expected %+v", was, expected)
+	}
+}
+
 // ExampleC14NWithComment does the canonilisation with comment in response.
 func ExampleC14NWithComment() {
 	xp := NewXpFromFile("testdata/response.xml")
@@ -595,11 +601,8 @@ func TestValidateSchema(t *testing.T) {
 	// Build document
 	xp := NewXpFromFile("testdata/response.xml")
 	errs, err := xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
-
-	// Test
-	if expected := 0; len(errs) != expected || err != nil {
-		t.Errorf("Unexpected number of errors; was %d expected %d", len(errs), expected)
-	}
+	gotExpected(len(errs), 0, "Unexpected number of errors", t)
+	gotExpected(err, nil, "Unexpected error", t)
 
 	// Make the document schema-invalid
 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
@@ -608,15 +611,9 @@ func TestValidateSchema(t *testing.T) {
 	errs, err = xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
 
 	// Test
-	if expected := 1; len(errs) != expected {
-		t.Errorf("Unexpected number of errors; was %d expected %d", len(errs), expected)
-	}
-	if expected := "Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer )."; errs[0].Error() != expected {
-		t.Errorf("Unexpected error; was %s expected %s", errs[0].Error(), expected)
-	}
-	if expected := "schema validation failed"; err.Error() != expected {
-		t.Errorf("Unexpected error; was %s expected %s", errs[0].Error(), expected)
-	}
+	gotExpected(len(errs), 1, "Unexpected number of errors", t)
+	gotExpected(errs[0].Error(), "Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).", "Unexpected error", t)
+	gotExpected(err.Error(), "schema validation failed", "Unexpected error", t)
 }
 
 func TestDecryptShibResponse(t *testing.T) {
@@ -633,9 +630,7 @@ func TestDecryptShibResponse(t *testing.T) {
 	shibresponse.Decrypt(encryptedAssertion.(types.Element), privatekey, []byte("-"))
 
 	// Test
-	if expected := "ZWiDjYoc03iQr5or7lpvv6Nb8vc="; shibresponse.DomSha1SumToBase64() != expected {
-		t.Errorf("Bad sum; was %s expected %s", shibresponse.DomSha1SumToBase64(), expected)
-	}
+	gotExpected(shibresponse.DomSha1SumToBase64(), "ZWiDjYoc03iQr5or7lpvv6Nb8vc=", "Bad sum", t)
 }
 
 // func ExampleDecryptNemloginResponse() {
