@@ -285,7 +285,10 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 		return WrapWithXp(err, xp)
 	}
 
-	response, _ := encryptedAssertion.ParentNode()
+	response, err := encryptedAssertion.ParentNode()
+	if err != nil {
+		return WrapWithXp(err, xp)
+	}
 	decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
 	if err != nil {
 		return WrapWithXp(err, xp)
