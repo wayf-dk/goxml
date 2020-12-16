@@ -1,10 +1,10 @@
 package goxml
 
 import (
-  "encoding/json"
-  "runtime"
-  "strings"
-  "fmt"
+	"encoding/json"
+	"fmt"
+	"runtime"
+	"strings"
 )
 
 type Werror struct {
