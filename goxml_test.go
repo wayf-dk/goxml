@@ -12,7 +12,7 @@ import (
 	"log"
 	"net/http"
 	//"runtime"
-	"strings"
+	// "strings"
 	//"time"
 	//"testing"
 )
@@ -193,7 +193,7 @@ func ExampleSignAndValidate() {
 
 		fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 		// VerifySignature re-inserts the signature so we must remove it now
-	    assertion.RemoveChild(xp.Query(assertion, "ds:Signature[1]")[0])
+		assertion.RemoveChild(xp.Query(assertion, "ds:Signature[1]")[0])
 	}
 
 	// Output:
@@ -207,16 +207,16 @@ func ExampleSignAndValidate() {
 	// 4+l1oINdPA8pA7YJpaykq9KsJObgJgkkufhIUOPqOE0=
 	// eTlL9mzLOkH9wMuwdxIxgAi7QfIYvvqHWd8Icb19I7/ZfuCYNXsfJY4MbSiefL5jSOKQB5tDN8FlV/263N4z0nHZ1vsns/HBKPCP8uJBcSzliJC+8XSUXdGaWz7jGPl1fLoqA1NhxbWXZFC/WoaVnYnPXlY1BR+OPa8Q9k2gu89xosx3gbkYv93CpKIRfyputxtqxXa1gNX59Gcp4hjbpeSF6FPSQ55BS0pIuxZ4+N1xsrJx93+NOdpxZ+Vimx7y3iwtO/vNVsvIEJNgv9w1Tfz6G/l3JYSsqQYZyzOA3m8mzA+KfoL9nEZuuoNmF12cs7QnG8eYWplbtUyuKao8Zg==
 	// verify: <nil>
-    // https://www.w3.org/2001/04/xmldsig-more#sha384
-    // https://www.w3.org/2001/04/xmldsig-more#rsa-sha384
-    // 8eGAd4VP4Y5k0XRracuWXXOU7ZjzCbEYgVZM3AIBOSDBo9uIyVQqJBnDRvJ0Lx9H
-    // VBNsfS8JvfgeCmGa8uXKmK99Mp6fCCLLpUc7KGKo3PfqOr/82lYST51vHBgRoBe9fBTHY7Y7xXfDKbdftmDM+REIS/e2u7hX30Vv8Bgf8/C0QlJ6MHQXBi15hbLjqNyE95maY7uWUPwStasYikZtKmAyt7azTZ/h2E5+KuemlKzzkShvxIzIpkjJV6O9m2B3tEcs6jgSF0j3ktHZx1noKDuXtoZlM1WpDYHJpivvpEr6u50xGXY3T3/ABuFFtt0SEQ/Y+0QMx4QQiEBJSo7DhtM4nluHL4rXvN4lVyBBgd1ypy+l4tLLt2e8P0v9daZfSYN4FI8UzH3QDrGhimhEnA==
-    // verify: <nil>
-    // https://www.w3.org/2001/04/xmlenc#sha512
-    // https://www.w3.org/2001/04/xmldsig-more#rsa-sha512
-    // S1Jc/6AgPplPSLYKNss2bE5E+wR+gCEKazomuA3qf5DKk5KOU2KZUiucBHhe0zOKT4qdD11+gXd8f02MNSYiWQ==
-    // LamV9eA/fAQ0vDALDDW1Vpf4t94KNkXzUcJOVBsvAdLqjd6V3p8tzd8iLtLkmpu+KIzVnAKaVg5tx8qVkldu6dImc09Tox2SUTGEXj/6PNKrl49MuQINpzek4dmCI3txPf7FxTP/ck91k6/N2vvIZxgGQenI2QYLuH3h++GlbtQWIpo1CDadlFdsQ6VJASmuH5bo81ed2uLAUva4w4sNP6TMK32Mq48v8tOGCP60gBiXzHjoT4kEg1HBMVuIgR9SYfzXMo5okfv5MEZZ+BLlkQWgI5v0SEN8N14Im9j3CIceVw/ajOfyS72D99WgP7sxoFQIiui4jyLVgECF+jI/NQ==
-    // verify: <nil>
+	// https://www.w3.org/2001/04/xmldsig-more#sha384
+	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha384
+	// 8eGAd4VP4Y5k0XRracuWXXOU7ZjzCbEYgVZM3AIBOSDBo9uIyVQqJBnDRvJ0Lx9H
+	// VBNsfS8JvfgeCmGa8uXKmK99Mp6fCCLLpUc7KGKo3PfqOr/82lYST51vHBgRoBe9fBTHY7Y7xXfDKbdftmDM+REIS/e2u7hX30Vv8Bgf8/C0QlJ6MHQXBi15hbLjqNyE95maY7uWUPwStasYikZtKmAyt7azTZ/h2E5+KuemlKzzkShvxIzIpkjJV6O9m2B3tEcs6jgSF0j3ktHZx1noKDuXtoZlM1WpDYHJpivvpEr6u50xGXY3T3/ABuFFtt0SEQ/Y+0QMx4QQiEBJSo7DhtM4nluHL4rXvN4lVyBBgd1ypy+l4tLLt2e8P0v9daZfSYN4FI8UzH3QDrGhimhEnA==
+	// verify: <nil>
+	// https://www.w3.org/2001/04/xmlenc#sha512
+	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha512
+	// S1Jc/6AgPplPSLYKNss2bE5E+wR+gCEKazomuA3qf5DKk5KOU2KZUiucBHhe0zOKT4qdD11+gXd8f02MNSYiWQ==
+	// LamV9eA/fAQ0vDALDDW1Vpf4t94KNkXzUcJOVBsvAdLqjd6V3p8tzd8iLtLkmpu+KIzVnAKaVg5tx8qVkldu6dImc09Tox2SUTGEXj/6PNKrl49MuQINpzek4dmCI3txPf7FxTP/ck91k6/N2vvIZxgGQenI2QYLuH3h++GlbtQWIpo1CDadlFdsQ6VJASmuH5bo81ed2uLAUva4w4sNP6TMK32Mq48v8tOGCP60gBiXzHjoT4kEg1HBMVuIgR9SYfzXMo5okfv5MEZZ+BLlkQWgI5v0SEN8N14Im9j3CIceVw/ajOfyS72D99WgP7sxoFQIiui4jyLVgECF+jI/NQ==
+	// verify: <nil>
 
 }
 
@@ -558,197 +558,197 @@ func ExampleQueryDashP3() {
 	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }
 
-func ExampleEncryptAndDecrypt() {
+// func ExampleEncryptAndDecrypt() {
+//
+// 	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
+// 	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
+// 	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
+//
+// 	fmt.Print(xp.Doc.Dump(true))
+// 	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
+// 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+//
+// 	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
+// 	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
+// 	xp.Encrypt(assertion, &pk.PublicKey, ea)
+//
+// 	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
+// 	encryptedData := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+// 	decryptedAssertion, _ := xp.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
+//
+// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+// 	parent, _ := encryptedAssertion.ParentNode()
+// 	parent.RemoveChild(encryptedAssertion)
+//
+// 	fmt.Print(xp.Doc.Dump(true))
+// 	// Output:
+// 	// <?xml version="1.0" encoding="UTF-8"?>
+// 	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+// 	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+// 	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
+// 	//       </saml:AuthnContext>
+// 	//     </saml:AuthnStatement>
+// 	//   </saml:Assertion>
+// 	// </samlp:Response>
+// 	// <?xml version="1.0" encoding="UTF-8"?>
+// 	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
+// 	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//   <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//     <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
+// 	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
+// 	//     </saml:AuthnContext>
+// 	//   </saml:AuthnStatement>
+// 	// </saml:Assertion>
+// 	// </samlp:Response>
+// }
+//
+// func ExampleValidateSchema() {
+// 	xp := NewXpFromFile("testdata/response.xml")
+// 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
+// 	// make the document schema-invalid
+// 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
+// 	parent, _ := issuer.ParentNode()
+// 	parent.RemoveChild(issuer)
+// 	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
+// 	// Output:
+// 	// [] <nil>
+// 	// [Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).] schema validation failed
+//
+// }
+//
+// func ExampleDecryptShibResponse() {
+// 	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
+//
+// 	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+//
+// 	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+// 	encryptedData := shibresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+// 	decryptedAssertion, _ := shibresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
+//
+// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+// 	parent, _ := encryptedAssertion.ParentNode()
+// 	parent.RemoveChild(encryptedAssertion)
+//
+// 	printHashedDom(shibresponse)
+//
+// 	/*
+// 		signatures := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
+// 		// don't do this in real life !!!
+// 		certs := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
+//
+// 		if len(signatures) == 1 {
+// 		    // fix - using package above us
+// 			if err = gosaml.VerifySign(shibresponse, certs, signatures); err != nil {
+// 				log.Panic(err)
+// 			}
+// 		}
+// 		fmt.Println(shibresponse.PP())
+// 	*/
+//
+// 	// Output:
+// 	// ZWiDjYoc03iQr5or7lpvv6Nb8vc=
+// }
 
-	xp := NewXpFromString(`<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"/>`)
-	xp.QueryDashP(nil, `./@ID`, "zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc", nil)
-	xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
+// func ExampleDecryptNemloginResponse() {
+// 	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
+//
+// 	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+//
+// 	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
+// 	encryptedData := nemloginresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
+// 	decryptedAssertion, _ := nemloginresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
+//
+// 	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
+// 	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
+// 	parent, _ := encryptedAssertion.ParentNode()
+// 	parent.RemoveChild(encryptedAssertion)
+//
+// 	printHashedDom(nemloginresponse)
+// 	/*
+// 		signatures := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
+// 		// don't do this in real life !!!
+// 		certs := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
+//
+// 		if len(signatures) == 1 {
+// 		    // fix - using package above us
+// 			if err = gosaml.VerifySign(nemloginresponse, certs, signatures); err != nil {
+// 				log.Panic(err)
+// 			}
+// 		}
+// 		fmt.Println(nemloginresponse.PP())
+// 	*/
+//
+// 	// Output:
+// 	// GuWLBRb1kEiwx/86+R0RmQnI8Mw=
+// }
 
-	fmt.Print(xp.Doc.Dump(true))
-	assertion := xp.Query(nil, "saml:Assertion[1]")[0]
-	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
-	ea := NewXpFromString(`<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"></saml:EncryptedAssertion>`)
-	xp.Encrypt(assertion, &pk.PublicKey, ea)
-
-	encryptedAssertion := xp.Query(nil, "//saml:EncryptedAssertion")[0]
-	encryptedData := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := xp.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-
-	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-	parent, _ := encryptedAssertion.ParentNode()
-	parent.RemoveChild(encryptedAssertion)
-
-	fmt.Print(xp.Doc.Dump(true))
-	// Output:
-	// <?xml version="1.0" encoding="UTF-8"?>
-	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//     <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//       <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//         <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-	//       </saml:AuthnContext>
-	//     </saml:AuthnStatement>
-	//   </saml:Assertion>
-	// </samlp:Response>
-	// <?xml version="1.0" encoding="UTF-8"?>
-	// <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc">
-	//   <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//   <saml:AuthnStatement xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//     <saml:AuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"/>
-	//       <saml:AuthenticatingAuthority xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">banton</saml:AuthenticatingAuthority>
-	//     </saml:AuthnContext>
-	//   </saml:AuthnStatement>
-	// </saml:Assertion>
-	// </samlp:Response>
-}
-
-func ExampleValidateSchema() {
-	xp := NewXpFromFile("testdata/response.xml")
-	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
-	// make the document schema-invalid
-	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
-	parent, _ := issuer.ParentNode()
-	parent.RemoveChild(issuer)
-	fmt.Println(xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd"))
-	// Output:
-	// [] <nil>
-	// [Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).] schema validation failed
-
-}
-
-func ExampleDecryptShibResponse() {
-	shibresponse := NewXpFromFile("testdata/testshib.org.encryptedresponse.xml")
-
-	privatekey, err := ioutil.ReadFile("testdata/private.key.pem")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	encryptedAssertion := shibresponse.Query(nil, "//saml:EncryptedAssertion")[0]
-	encryptedData := shibresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := shibresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-
-	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-	parent, _ := encryptedAssertion.ParentNode()
-	parent.RemoveChild(encryptedAssertion)
-
-	printHashedDom(shibresponse)
-
-	/*
-		signatures := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
-		// don't do this in real life !!!
-		certs := shibresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
-
-		if len(signatures) == 1 {
-		    // fix - using package above us
-			if err = gosaml.VerifySign(shibresponse, certs, signatures); err != nil {
-				log.Panic(err)
-			}
-		}
-		fmt.Println(shibresponse.PP())
-	*/
-
-	// Output:
-	// ZWiDjYoc03iQr5or7lpvv6Nb8vc=
-}
-
-func ExampleDecryptNemloginResponse() {
-	nemloginresponse := NewXpFromFile("testdata/nemlogin.encryptedresponse.xml")
-
-	privatekey, err := ioutil.ReadFile("testdata/nemlogin.key.pem")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	encryptedAssertion := nemloginresponse.Query(nil, "//saml:EncryptedAssertion")[0]
-	encryptedData := nemloginresponse.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	decryptedAssertion, _ := nemloginresponse.Decrypt(encryptedData.(types.Element), privatekey, []byte("-"))
-
-	decryptedAssertionElement, _ := decryptedAssertion.Doc.DocumentElement()
-	_ = encryptedAssertion.AddPrevSibling(decryptedAssertionElement)
-	parent, _ := encryptedAssertion.ParentNode()
-	parent.RemoveChild(encryptedAssertion)
-
-	printHashedDom(nemloginresponse)
-	/*
-		signatures := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/..")
-		// don't do this in real life !!!
-		certs := nemloginresponse.Query(nil, "/samlp:Response[1]/saml:Assertion[1]/ds:Signature[1]/ds:KeyInfo/ds:X509Data/ds:X509Certificate")
-
-		if len(signatures) == 1 {
-		    // fix - using package above us
-			if err = gosaml.VerifySign(nemloginresponse, certs, signatures); err != nil {
-				log.Panic(err)
-			}
-		}
-		fmt.Println(nemloginresponse.PP())
-	*/
-
-	// Output:
-	// GuWLBRb1kEiwx/86+R0RmQnI8Mw=
-}
-
-func ExampleDecrypt() { //OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
-
-	tests := []string{
-		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
-		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml",
-		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml",
-		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml",
-	}
-
-	for _, test := range tests {
-		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
-		parts := strings.Split(test, "__")
-
-		pemFile := "testdata/private.key.pem"
-		pemBlock, _ := ioutil.ReadFile(pemFile)
-		xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
-		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
-
-		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
-		if err != nil {
-			//if err == rsa.ErrDecryption {
-			pemFile := "testdata/w3c/" + parts[1] + ".pem"
-			pemBlock, _ := ioutil.ReadFile(pemFile)
-			xp2 := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
-			encryptedData := xp2.Query(nil, "//dummy/xenc:EncryptedData")[0]
-
-			decrypted, err = xp2.Decrypt(encryptedData, pemBlock, []byte("-"))
-			if err != nil {
-				fmt.Println("Error =", err)
-			}
-		}
-		if err != nil {
-			fmt.Println("Error =", err)
-		}
-
-		if decrypted != nil {
-			printHashedDom(decrypted)
-		} else {
-			fmt.Println(decrypted)
-		}
-	}
-	// Output:
-	// 6naYuUBtlCi/Yf1/DIZgJXIghWM=
-	// Error = digestMethod != keyEncryptionMethod not supported
-	// Error = digestMethod != keyEncryptionMethod not supported
-	// <nil>
-	// Error = digestMethod != keyEncryptionMethod not supported
-	// Error = digestMethod != keyEncryptionMethod not supported
-	// <nil>
-	// Error = digestMethod != keyEncryptionMethod not supported
-	// Error = digestMethod != keyEncryptionMethod not supported
-	//<nil>
-}
+// func ExampleDecrypt() { //OAEP does not support different key Encryption methods "digestMethod != keyEncryptionMethod not supported"
+//
+// 	tests := []string{
+// 		"cipherText__RSA-2048__aes128-gcm__rsa-oaep-mgf1p.xml",
+// 		"cipherText__RSA-3072__aes192-gcm__rsa-oaep-mgf1p__Sha256.xml",
+// 		"cipherText__RSA-3072__aes256-gcm__rsa-oaep__Sha384-MGF_Sha1.xml",
+// 		"cipherText__RSA-4096__aes256-gcm__rsa-oaep__Sha512-MGF_Sha1_PSource.xml",
+// 	}
+//
+// 	for _, test := range tests {
+// 		cipherText, _ := ioutil.ReadFile("testdata/w3c/" + test)
+// 		parts := strings.Split(test, "__")
+//
+// 		pemFile := "testdata/private.key.pem"
+// 		pemBlock, _ := ioutil.ReadFile(pemFile)
+// 		xp := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
+// 		encryptedData := xp.Query(nil, "//dummy/xenc:EncryptedData")[0]
+//
+// 		decrypted, err := xp.Decrypt(encryptedData, pemBlock, []byte("-"))
+// 		if err != nil {
+// 			//if err == rsa.ErrDecryption {
+// 			pemFile := "testdata/w3c/" + parts[1] + ".pem"
+// 			pemBlock, _ := ioutil.ReadFile(pemFile)
+// 			xp2 := NewXpFromString("<dummy>" + string(cipherText) + "</dummy>")
+// 			encryptedData := xp2.Query(nil, "//dummy/xenc:EncryptedData")[0]
+//
+// 			decrypted, err = xp2.Decrypt(encryptedData, pemBlock, []byte("-"))
+// 			if err != nil {
+// 				fmt.Println("Error =", err)
+// 			}
+// 		}
+// 		if err != nil {
+// 			fmt.Println("Error =", err)
+// 		}
+//
+// 		if decrypted != nil {
+// 			printHashedDom(decrypted)
+// 		} else {
+// 			fmt.Println(decrypted)
+// 		}
+// 	}
+// 	// Output:
+// 	// 6naYuUBtlCi/Yf1/DIZgJXIghWM=
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	// <nil>
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	// <nil>
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	// Error = digestMethod != keyEncryptionMethod not supported
+// 	//<nil>
+// }
