@@ -285,7 +285,10 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 		return WrapWithXp(err, xp)
 	}
 
-	response, _ := encryptedAssertion.ParentNode()
+	response, err := encryptedAssertion.ParentNode()
+	if err != nil {
+		return WrapWithXp(err, xp)
+	}
 	decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
 	if err != nil {
 		return WrapWithXp(err, xp)
@@ -470,4 +473,9 @@ func Hash(h crypto.Hash, data string) []byte {
 	digest := h.New()
 	io.WriteString(digest, data)
 	return digest.Sum(nil)
+}
+
+func (xp *Xp) DomSha1SumToBase64() string {
+	hash := sha1.Sum([]byte(xp.C14n(nil, "")))
+	return base64.StdEncoding.EncodeToString(append(hash[:]))
 }
