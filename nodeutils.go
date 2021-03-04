@@ -1,7 +1,6 @@
 package goxml
 
 import (
-	"C"
 	"fmt"
 	"strings"
 
