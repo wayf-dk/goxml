@@ -17,7 +17,6 @@ import (
 	"github.com/wayf-dk/go-libxml2/dom"
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/go-libxml2/xpath"
-	"github.com/wayf-dk/go-libxml2/xsd"
 )
 
 type (
@@ -36,8 +35,6 @@ var (
 	re  = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
 	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
 
-	// persistent cache of compiled schemas
-	schemaCache = make(map[string]*xsd.Schema)
 	libxml2Lock sync.Mutex
 	qdpLock     sync.Mutex
 )
@@ -421,21 +418,11 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 }
 
 // SchemaValidate validate the document against the the schema file given in url
-func (xp *Xp) SchemaValidate(url string) (errs []error, err error) {
+func (xp *Xp) SchemaValidate() (errs []error, err error) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	//    xsdsrc, _ := ioutil.ReadFile(url)
-	var schema *xsd.Schema
-	if schema = schemaCache[url]; schema == nil {
-		schema, err = xsd.Parse([]byte(url))
-		if err != nil {
-			panic(err)
-		}
-		schemaCache[url] = schema
-	}
-	//	defer schema.Free() // never free keep them around until we terminate
-	if err := schema.Validate(xp.Doc); err != nil {
-		return err.(xsd.SchemaValidationError).Errors(), err
+	if err := validate(xp.Doc); err != nil {
+		return []error{}, err
 	}
 	return nil, nil
 }
