@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/wayf-dk/go-libxml2/types"
-	"github.com/wayf-dk/goeleven/src/goeleven"
+	"github.com/wayf-dk/goeleven"
 )
 
 // algo xmlsec digest and signature algorith and their Go name
