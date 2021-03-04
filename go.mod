@@ -1,12 +1,13 @@
 module github.com/wayf-dk/goxml
 
-go 1.15
+go 1.16
 
 require (
-	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/wayf-dk/go-libxml2 v0.0.0-20200913202138-5af62eb8566b
 	github.com/wayf-dk/goeleven v0.0.0-20200817121619-2e6a9bee65e8
+	gopkg.in/xmlpath.v1 v1.0.0-20140413065638-a146725ea6e7 // indirect
 )
 
 replace (
