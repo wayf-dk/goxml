@@ -418,11 +418,8 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 }
 
 // SchemaValidate validate the document against the the schema file given in url
-func (xp *Xp) SchemaValidate() (errs []error, err error) {
+func (xp *Xp) SchemaValidate() (err error) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	if err := validate(xp.Doc); err != nil {
-		return []error{}, err
-	}
-	return nil, nil
+	return validate(xp.Doc)
 }

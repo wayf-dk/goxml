@@ -79,12 +79,24 @@ xmlSchemaPtr Samlschema(char* samlpSchema, char* samlSchema, char *xmldsigSchema
     free(xenc);
     return(schemaPtr);
 }
+
+void devnull(void * ctx, const char * msg, ...) {
+    return;
+}
+
+void DisableErrorOutput(xmlSchemaValidCtxtPtr ctx) {
+    xmlGenericErrorFunc handler = (xmlGenericErrorFunc)devnull;
+    xmlSetGenericErrorFunc(ctx, handler);
+//    initGenericErrorDefaultFunc(handler);
+}
+
 */
 import "C"
 
 import (
 	_ "embed"
-	"fmt"
+    "fmt"
+	"log"
 	"github.com/wayf-dk/go-libxml2/types"
 	"unsafe"
 )
@@ -102,14 +114,22 @@ var (
 	//go:embed schemas/xenc-schema.xsd
 	xencSchema string
 
-	sptr = C.Samlschema(C.CString(samlpSchema), C.CString(samlSchema), C.CString(xmldsigSchema), C.CString(xencSchema))
+	sptr C.xmlSchemaPtr
 )
+
+func init() {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+    sptr = C.Samlschema(C.CString(samlpSchema), C.CString(samlSchema), C.CString(xmldsigSchema), C.CString(xencSchema))
+	log.Println("samlschema.go")
+}
 
 func validate(d types.Document) error {
 	ctx := C.xmlSchemaNewValidCtxt(sptr)
 	if ctx == nil {
 		return fmt.Errorf("failed to build validator")
 	}
+	C.DisableErrorOutput(ctx)
 	defer C.xmlSchemaFreeValidCtxt(ctx)
 
 	dptr := (*C.xmlDoc)(unsafe.Pointer(d.Pointer()))
