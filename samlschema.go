@@ -96,7 +96,6 @@ import "C"
 import (
 	_ "embed"
     "fmt"
-	"log"
 	"github.com/wayf-dk/go-libxml2/types"
 	"unsafe"
 )
@@ -121,7 +120,6 @@ func init() {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
     sptr = C.Samlschema(C.CString(samlpSchema), C.CString(samlSchema), C.CString(xmldsigSchema), C.CString(xencSchema))
-	log.Println("samlschema.go")
 }
 
 func validate(d types.Document) error {
