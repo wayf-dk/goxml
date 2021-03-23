@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -18,31 +19,18 @@ import (
 
 	"github.com/wayf-dk/go-libxml2/types"
 	"github.com/wayf-dk/goeleven"
+	"x.config"
 )
 
-// algo xmlsec digest and signature algorith and their Go name
-type algo struct {
-	Short, digest, Signature string
-	Algo                     crypto.Hash
-	derprefix                string
-}
+var (
+	DigestMethods  = map[string]config.CryptoMethod{}
+	SigningMethods = map[string]config.CryptoMethod{}
+)
 
-/**
-  algos from shorthand to xmlsec and golang defs of digest and signature algorithms
-*/
-var Algos = map[string]algo{
-	"sha256": {"sha256", "http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", crypto.SHA256, "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20"},
-	"sha384": {"sha384", "https://www.w3.org/2001/04/xmldsig-more#sha384", "https://www.w3.org/2001/04/xmldsig-more#rsa-sha384", crypto.SHA384, "\x30\x41\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02\x05\x00\x04\x30"},
-	"sha512": {"sha512", "https://www.w3.org/2001/04/xmlenc#sha512", "https://www.w3.org/2001/04/xmldsig-more#rsa-sha512", crypto.SHA512, "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"},
-	//"ecdsa-sha256" : algo{"http://www.w3.org/2001/04/xmlenc#sha256", "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256", crypto.SHA256, ""},
-}
-
-func initAlgos() {
-	// from xmlsec idents to golang defs of digest algorithms
-	Algos[""] = Algos["sha256"]
-	for _, a := range Algos {
-		Algos[a.digest] = a
-		Algos[a.Signature] = a
+func init() {
+	for _, method := range config.CryptoMethods {
+		DigestMethods[method.DigestMethod] = method
+		SigningMethods[method.SigningMethod] = method
 	}
 }
 
@@ -50,22 +38,22 @@ func initAlgos() {
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
 // See https://github.com/wayf-dk/
 func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo string) (err error) {
-	contextHash := Hash(Algos[algo].Algo, xp.C14n(context, ""))
+	contextHash := Hash(config.CryptoMethods[algo].Hash, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
 	id := xp.Query1(context, "@ID | @AssertionID")
 
 	signedInfo := xp.QueryDashP(context, `ds:Signature/ds:SignedInfo`, "", before)
 	xp.QueryDashP(signedInfo, `/ds:CanonicalizationMethod/@Algorithm`, "http://www.w3.org/2001/10/xml-exc-c14n#", nil)
-	xp.QueryDashP(signedInfo, `ds:SignatureMethod[1]/@Algorithm`, Algos[algo].Signature, nil)
+	xp.QueryDashP(signedInfo, `ds:SignatureMethod[1]/@Algorithm`, config.CryptoMethods[algo].SigningMethod, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/@URI`, "#"+id, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:Transforms/ds:Transform[1][@Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"]`, "", nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:Transforms/ds:Transform[2][@Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"]`, "", nil)
-	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestMethod[1]/@Algorithm`, Algos[algo].digest, nil)
+	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestMethod[1]/@Algorithm`, config.CryptoMethods[algo].DigestMethod, nil)
 	xp.QueryDashP(signedInfo, `ds:Reference/ds:DigestValue[1]`, contextDigest, nil)
 
 	signedInfoC14n := xp.C14n(signedInfo, "")
-	digest := Hash(Algos[algo].Algo, signedInfoC14n)
+	digest := Hash(config.CryptoMethods[algo].Hash, signedInfoC14n)
 
 	signaturevalue, err := Sign(digest, privatekey, pw, algo)
 	if err != nil {
@@ -79,7 +67,7 @@ func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo
 }
 
 // VerifySignature Verify a signature for the given context and public key
-func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (err error) {
+func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey) (err error) {
 	signaturelist := xp.Query(context, "ds:Signature[1]")
 	if len(signaturelist) != 1 {
 		return fmt.Errorf("no signature found")
@@ -99,13 +87,12 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 	}
 
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
-
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
 	nextsibling, _ := signature.NextSibling()
 	context.RemoveChild(signature)
 
-	contextDigest := Hash(Algos[digestMethod].Algo, xp.C14n(context, nsPrefix))
+	contextDigest := Hash(DigestMethods[digestMethod].Hash, xp.C14n(context, nsPrefix))
 
 	if nextsibling != nil {
 		nextsibling.AddPrevSibling(signature)
@@ -120,19 +107,34 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []*rsa.PublicKey) (
 		return fmt.Errorf("digest mismatch")
 	}
 	signatureMethod := xp.Query1(signedInfo, "ds:SignatureMethod/@Algorithm")
-	signedInfoDigest := Hash(Algos[signatureMethod].Algo, signedInfoC14n)
+
+	signedInfoDigest := Hash(SigningMethods[signatureMethod].Hash, signedInfoC14n)
 
 	//    log.Printf("SigAlg: %s %s %s %s\n", xp.QueryString(context, "local-name(.)"), xp.Query1(context, "saml:Issuer"), digestMethod, signatureMethod)
 
 	ds, _ := base64.StdEncoding.DecodeString(signatureValue)
 
 	for _, pub := range publicKeys {
-		err = rsa.VerifyPKCS1v15(pub, Algos[signatureMethod].Algo, signedInfoDigest[:], ds)
+		err = Verify(pub, SigningMethods[signatureMethod].Hash, signedInfoDigest[:], ds)
 		if err == nil {
 			return
 		}
 	}
 
+	return
+}
+
+func Verify(pub crypto.PublicKey, algo crypto.Hash, digest, signature []byte) (err error) {
+	switch pk := pub.(type) {
+	case *rsa.PublicKey:
+		err = rsa.VerifyPKCS1v15(pk, algo, digest, signature)
+	case ed25519.PublicKey:
+		if !ed25519.Verify(pk, digest, signature) {
+			err = errors.New("verifying ed25519 signature failed")
+		}
+	default:
+		err = errors.New("unknown public key type")
+	}
 	return
 }
 
@@ -144,16 +146,23 @@ func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, er
 }
 
 func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
-	var priv *rsa.PrivateKey
+	var priv interface{}
 	if priv, err = Pem2PrivateKey(privatekey, pw); err != nil {
 		return
 	}
-	signaturevalue, err = rsa.SignPKCS1v15(rand.Reader, priv, Algos[algo].Algo, digest)
+	switch pk := priv.(type) {
+	case *rsa.PrivateKey:
+		signaturevalue, err = rsa.SignPKCS1v15(rand.Reader, pk, config.CryptoMethods[algo].Hash, digest)
+	case ed25519.PrivateKey:
+		signaturevalue, err = pk.Sign(rand.Reader, digest, crypto.Hash(0))
+	default:
+		fmt.Println("unknown")
+	}
 	return
 }
 
 func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
-	data := append([]byte(Algos[algo].derprefix), digest...)
+	data := append([]byte(config.CryptoMethods[algo].DerPrefix), digest...)
 	return callHSM("sign", data, string(privatekey), "CKM_RSA_PKCS", "")
 }
 
@@ -258,7 +267,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 		if err != nil {
 			return Wrap(err)
 		}
-		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv, encryptedKeybyte, OAEPparamsbyte)
+		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv.(*rsa.PrivateKey), encryptedKeybyte, OAEPparamsbyte)
 		if err != nil {
 			return Wrap(err)
 		}
@@ -301,7 +310,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 }
 
 // Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
-func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err error) {
+func Pem2PrivateKey(privatekeypem, pw []byte) (pk interface{}, err error) {
 	block, _ := pem.Decode(privatekeypem) // not used rest
 	derbytes := block.Bytes
 	if string(pw) != "-" {
@@ -309,12 +318,10 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (privatekey *rsa.PrivateKey, err e
 			return nil, Wrap(err)
 		}
 	}
-	if privatekey, err = x509.ParsePKCS1PrivateKey(derbytes); err != nil {
-		var pk interface{}
+	if pk, err = x509.ParsePKCS1PrivateKey(derbytes); err != nil {
 		if pk, err = x509.ParsePKCS8PrivateKey(derbytes); err != nil {
 			return nil, Wrap(err)
 		}
-		privatekey = pk.(*rsa.PrivateKey)
 	}
 	return
 }

@@ -2,7 +2,7 @@ package goxml
 
 // Namespaces - map of prefix to uri for namespaces
 var Namespaces = map[string]string{
-	"algsupport": "urn:oasis:names:tc:SAML:metadata:algsupport",
+	"alg":        "urn:oasis:names:tc:SAML:metadata:algsupport",
 	"corto":      "http://corto.wayf.dk",
 	"ds":         "http://www.w3.org/2000/09/xmldsig#",
 	"idpdisc":    "urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol",
