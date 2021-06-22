@@ -490,12 +490,3 @@ func (xp *Xp) DomSha1SumToBase64() string {
 	hash := sha1.Sum([]byte(xp.C14n(nil, "")))
 	return base64.StdEncoding.EncodeToString(append(hash[:]))
 }
-
-// PP - super simple Pretty Print - using JSON
-func PP(i ...interface{}) {
-	for _, e := range i {
-		s, _ := json.MarshalIndent(e, "", "    ")
-		config.Logger.Println(string(s))
-	}
-	return
-}
