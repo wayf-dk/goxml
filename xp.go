@@ -125,10 +125,13 @@ func (xp *Xp) addXPathContext() {
 }
 
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
-func NewXpFromNode(node types.Node) *Xp {
-	xp := NewXp([]byte{})
+func NewXpFromNode(node types.Node)(xp *Xp) {
+	xp = new(Xp)
+	xp.Doc = dom.NewDocument("1.0", "")
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
-	return xp
+	xp.addXPathContext()
+	runtime.SetFinalizer(xp, freeXp)
+	return
 }
 
 // NewHTMLXp - Parse html object with doc - used in testing for "forwarding" samlresponses from html to http
