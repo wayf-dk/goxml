@@ -31,9 +31,6 @@ func init() {
 	for _, method := range config.CryptoMethods {
 		DigestMethods[method.DigestMethod] = method
 		SigningMethods[method.SigningMethod] = method
-
-		DigestMethods[strings.Replace(method.DigestMethod, "http://", "https://", 1)] = method
-		SigningMethods[strings.Replace(method.SigningMethod, "http://", "https://", 1)] = method
 	}
 }
 
