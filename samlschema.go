@@ -15,13 +15,15 @@ char* samlp;
 char* saml;
 char* xmldsig;
 char* xenc;
+char* xenc11;
 
 static int
 xpMatch(const char * URI) {
 //    printf("match: %s\n", URI);
-    if (!strncmp(URI, "saml", 4)) return(1);
-    if (!strncmp(URI, "xmldsig", 6)) return(1);
-    if (!strncmp(URI, "xenc", 4)) return(1);
+    if (!strcmp(URI, "saml-schema-assertion-2.0.xsd")) return(1);
+    if (!strcmp(URI, "xmldsig-core-schema.xsd")) return(1);
+    if (!strcmp(URI, "xenc-schema-11.xsd")) return(1);
+    if (!strcmp(URI, "xenc-schema.xsd")) return(1);
     return(0);
 }
 
@@ -29,9 +31,10 @@ static void *
 xpOpen(const char * URI) {
 //    printf("open %s\n", URI);
     roffset = 0;
-    if (!strncmp(URI, "saml", 4)) { rlen = strlen(saml); return(saml); }
-    if (!strncmp(URI, "xmldsig", 4)) { rlen = strlen(xmldsig); return(xmldsig); }
-    if (!strncmp(URI, "xenc", 4)) { rlen = strlen(xenc); return(xenc); }
+    if (!strcmp(URI, "saml-schema-assertion-2.0.xsd")) { rlen = strlen(saml); return(saml); }
+    if (!strcmp(URI, "xmldsig-core-schema.xsd")) { rlen = strlen(xmldsig); return(xmldsig); }
+    if (!strcmp(URI, "xenc-schema-11.xsd")) { rlen = strlen(xenc11); return(xenc11); }
+    if (!strcmp(URI, "xenc-schema.xsd")) { rlen = strlen(xenc); return(xenc); }
     return NULL;
 }
 
@@ -54,7 +57,7 @@ xpClose(void * context) {
     return(0);
 }
 
-xmlSchemaPtr Samlschema(char* samlpSchema, char* samlSchema, char *xmldsigSchema, char* xencSchema) {
+xmlSchemaPtr Samlschema(char* samlpSchema, char* samlSchema, char *xmldsigSchema, char* xencSchema, char* xencSchema11) {
     xmlDocPtr doc;
     xmlSchemaParserCtxtPtr schemaCtx;
     xmlSchemaPtr schemaPtr;
@@ -63,6 +66,7 @@ xmlSchemaPtr Samlschema(char* samlpSchema, char* samlSchema, char *xmldsigSchema
     saml = samlSchema;
     xmldsig = xmldsigSchema;
     xenc = xencSchema;
+    xenc11 = xencSchema11;
 
     if (xmlRegisterInputCallbacks(xpMatch, xpOpen, xpRead, xpClose) < 0) {
         fprintf(stderr, "failed to register sp handler\n");
@@ -77,6 +81,7 @@ xmlSchemaPtr Samlschema(char* samlpSchema, char* samlSchema, char *xmldsigSchema
     free(saml);
     free(xmldsig);
     free(xenc);
+    free(xenc11);
     return(schemaPtr);
 }
 
@@ -113,13 +118,16 @@ var (
 	//go:embed schemas/xenc-schema.xsd
 	xencSchema string
 
+	//go:embed schemas/xenc-schema-11.xsd
+	xencSchema11 string
+
 	sptr C.xmlSchemaPtr
 )
 
 func init() {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-    sptr = C.Samlschema(C.CString(samlpSchema), C.CString(samlSchema), C.CString(xmldsigSchema), C.CString(xencSchema))
+    sptr = C.Samlschema(C.CString(samlpSchema), C.CString(samlSchema), C.CString(xmldsigSchema), C.CString(xencSchema), C.CString(xencSchema11))
 }
 
 func validate(d types.Document) error {

@@ -13,6 +13,8 @@
         schemaLocation="xmldsig-core-schema.xsd"/>
     <import namespace="http://www.w3.org/2001/04/xmlenc#"
         schemaLocation="xenc-schema.xsd"/>
+    <import namespace="http://www.w3.org/2009/xmldsig11#"
+        schemaLocation="xenc-schema-11.xsd"/>
     <annotation>
         <documentation>
             Document identifier: saml-schema-assertion-2.0
