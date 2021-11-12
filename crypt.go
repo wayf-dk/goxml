@@ -89,10 +89,16 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey)
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
+    dgm, ok := DigestMethods[digestMethod]
+    if !ok {
+        config.PP(digestMethod, xp.PP())
+    	return fmt.Errorf("Unknown digestMethod")
+    }
+
 	nextsibling, _ := signature.NextSibling()
 	context.RemoveChild(signature)
 
-	contextDigest := Hash(DigestMethods[digestMethod].Hash, xp.C14n(context, nsPrefix))
+	contextDigest := Hash(dgm.Hash, xp.C14n(context, nsPrefix))
 
 	if nextsibling != nil {
 		nextsibling.AddPrevSibling(signature)
