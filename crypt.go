@@ -8,7 +8,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -175,16 +175,18 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 // Encrypt the context with the given publickey
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
-func (xp *Xp) Encrypt(context types.Node, publickey *rsa.PublicKey) (err error) {
-	ects := xp.QueryDashP(nil, "saml:EncryptedAssertion/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", context)
+func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey) (err error) {
+	ects := xp.QueryDashP(nil, elementName+"/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", nil)
 	xp.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#aes256-gcm"]`, "", nil)
-	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"]/ds:DigestMethod[@Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"]`, "", nil)
+	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#rsa-oaep"]`, "", nil)
+	xp.QueryDashP(ecm, `ds:DigestMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"]`, "", nil)
+	xp.QueryDashP(ecm, `xenc11:MGF[@Algorithm="http://www.w3.org/2009/xmlenc11#mgf1sha256"]`, "", nil)
 
 	sessionkey, ciphertext, err := encryptAESGCM([]byte(context.ToString(1, true)))
 	if err != nil {
 		return
 	}
-	encryptedSessionkey, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, publickey, sessionkey, nil)
+	encryptedSessionkey, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publickey, sessionkey, nil)
 	if err != nil {
 		return
 	}
