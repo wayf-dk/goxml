@@ -1,7 +1,6 @@
 package goxml
 
 import (
-	"bytes"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -33,7 +32,8 @@ type (
 
 var (
 	re  = regexp.MustCompile(`\/?([^\/"]*("[^"]*")?[^\/"]*)`) // slashes inside " is the problem
-	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(?:\[?@([^=]+)(?:="([^"]*)"])?)?()$`)
+	re2 = regexp.MustCompile(`^(?:(\w+):?)?([^\[@]*)(?:\[(\d+)\])?(.+)*()$`)
+	re3 = regexp.MustCompile(`^(?:\[?@([^=]+)(?:="([^"]*)"])?)+$`)
 
 	libxml2Lock sync.Mutex
 	qdpLock     sync.Mutex
@@ -125,7 +125,7 @@ func (xp *Xp) addXPathContext() {
 }
 
 // NewXpFromNode creates a new *Xp from a node (subtree) from another *Xp
-func NewXpFromNode(node types.Node)(xp *Xp) {
+func NewXpFromNode(node types.Node) (xp *Xp) {
 	xp = new(Xp)
 	xp.Doc = dom.NewDocument("1.0", "")
 	xp.Doc.SetDocumentElement(xp.CopyNode(node, 1))
@@ -316,6 +316,34 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 	return ""
 }
 
+// Very poor mans "parser" for splitting xpaths by / - just enough for our purpose - allowing /'s in quoted strings
+func parse(xpath string) (path []string) {
+	path = []string{}
+	buf := ""
+	quoted := false
+
+	for _, x := range xpath {
+		z := string(x)
+		switch x {
+		case '/':
+			switch quoted {
+			case true:
+				buf += z
+			case false:
+				path = append(path, buf)
+				buf = ""
+			}
+		case '"':
+			buf += z
+			quoted = !quoted
+		default:
+			buf += z
+		}
+	}
+	path = append(path, buf)
+	return
+}
+
 // QueryDashP generative xpath query - ie. mkdir -p for xpath ...
 // Understands simple xpath expressions including indexes and attribute values
 func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
@@ -329,15 +357,11 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	if context == nil {
 		context, _ = xp.Doc.DocumentElement()
 	}
-	path := re.FindAllStringSubmatch(query, -1)
-	if query[0] == '/' {
-		var buffer bytes.Buffer
-		//buffer.WriteString("/")
-		buffer.WriteString(path[0][1])
-		path[0][1] = buffer.String()
-	}
-	for _, elements := range path {
-		element := elements[1]
+	for _, element := range parse(query) {
+		//element := elements[1]
+		if element == "" {
+			continue
+		}
 		attrContext = nil
 		nodes := xp.Query(context, element)
 		if len(nodes) > 0 {
@@ -349,7 +373,7 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				panic("QueryDashP problem")
 			}
 			dn := d[0]
-			ns, element, positionS, attribute, value := dn[1], dn[2], dn[3], dn[4], dn[5]
+			ns, element, positionS, attributes := dn[1], dn[2], dn[3], dn[4]
 			if element != "" {
 				if positionS == "0" {
 					context = xp.createElementNS(ns, element, context, before)
@@ -370,11 +394,16 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				}
 				before = nil
 			}
-			if attribute != "" {
-				context.(types.Element).SetAttribute(attribute, value)
-				ctx, _ := context.(types.Element).GetAttribute(attribute)
-				attrContext = ctx.(types.Node)
-				//defer attrContext.Free()
+			if attributes != "" {
+				for _, attribute := range strings.SplitAfter(attributes, "]") {
+					if attribute != "" {
+						for _, kv := range re3.FindAllStringSubmatch(attribute, -1) {
+							context.(types.Element).SetAttribute(kv[1], kv[2])
+							ctx, _ := context.(types.Element).GetAttribute(kv[1])
+							attrContext = ctx.(types.Node)
+						}
+					}
+				}
 			}
 		}
 	}
