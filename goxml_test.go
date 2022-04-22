@@ -1,6 +1,7 @@
 package goxml
 
 import (
+    "crypto"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -9,9 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"runtime"
 	"strings"
-	//"time"
 	"testing"
 )
 
@@ -183,9 +182,9 @@ func ExampleSignAndValidate() {
 	}
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
-	for _, hashfunc := range []string{"sha1", "sha256", "sha384", "sha512"} {
+	for _, hashfunc := range []string{"rsa256", "rsa384", "rsa512"} {
 		xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", hashfunc)
 		assertion = xp.Query(nil, "saml:Assertion[1]")[0]
 
@@ -200,23 +199,18 @@ func ExampleSignAndValidate() {
 	}
 
 	// Output:
-	// http://www.w3.org/2000/09/xmldsig#sha1
-	// http://www.w3.org/2000/09/xmldsig#rsa-sha1
-	// 3NN6sB8hU2sKZhm8kUKzHQhfBps=
-	// gZQYBrzigDvKZTJcSaNfPJOYvqDBgV6zOCV9ghw67jEMVrbcz4XCBp3wjVI2z9rUnkn0Swi11BvW/qOIKhS13BAfGH+j6+1qRHDOlfcZntmqb1fFPVq+geuwQ1CVWWFFQ4zhg96ihzvQG1P2Sqj1TzUWIRtYHueleDJLXLD8yYAxj1TReT6flzPKtJAGr7h03GHgQPyBk6hWvvrP3Jb/sDYRWBOUFoj2uCqpQcU2nA8Li1QWmhDGSjgMmgNtTF2Zr8bukfEMvxjt0YZBAFcf26EGqQS3wbmBGSGpszKL78AdFFJZRBLs9Zk4iClu8GnEvCdB68T0klywvLzu/tsVDQ==
-	// verify: <nil>
 	// http://www.w3.org/2001/04/xmlenc#sha256
 	// http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
 	// 4+l1oINdPA8pA7YJpaykq9KsJObgJgkkufhIUOPqOE0=
 	// eTlL9mzLOkH9wMuwdxIxgAi7QfIYvvqHWd8Icb19I7/ZfuCYNXsfJY4MbSiefL5jSOKQB5tDN8FlV/263N4z0nHZ1vsns/HBKPCP8uJBcSzliJC+8XSUXdGaWz7jGPl1fLoqA1NhxbWXZFC/WoaVnYnPXlY1BR+OPa8Q9k2gu89xosx3gbkYv93CpKIRfyputxtqxXa1gNX59Gcp4hjbpeSF6FPSQ55BS0pIuxZ4+N1xsrJx93+NOdpxZ+Vimx7y3iwtO/vNVsvIEJNgv9w1Tfz6G/l3JYSsqQYZyzOA3m8mzA+KfoL9nEZuuoNmF12cs7QnG8eYWplbtUyuKao8Zg==
 	// verify: <nil>
-	// https://www.w3.org/2001/04/xmldsig-more#sha384
-	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha384
+	// http://www.w3.org/2001/04/xmldsig-more#sha384
+	// http://www.w3.org/2001/04/xmldsig-more#rsa-sha384
 	// 8eGAd4VP4Y5k0XRracuWXXOU7ZjzCbEYgVZM3AIBOSDBo9uIyVQqJBnDRvJ0Lx9H
 	// VBNsfS8JvfgeCmGa8uXKmK99Mp6fCCLLpUc7KGKo3PfqOr/82lYST51vHBgRoBe9fBTHY7Y7xXfDKbdftmDM+REIS/e2u7hX30Vv8Bgf8/C0QlJ6MHQXBi15hbLjqNyE95maY7uWUPwStasYikZtKmAyt7azTZ/h2E5+KuemlKzzkShvxIzIpkjJV6O9m2B3tEcs6jgSF0j3ktHZx1noKDuXtoZlM1WpDYHJpivvpEr6u50xGXY3T3/ABuFFtt0SEQ/Y+0QMx4QQiEBJSo7DhtM4nluHL4rXvN4lVyBBgd1ypy+l4tLLt2e8P0v9daZfSYN4FI8UzH3QDrGhimhEnA==
 	// verify: <nil>
-	// https://www.w3.org/2001/04/xmlenc#sha512
-	// https://www.w3.org/2001/04/xmldsig-more#rsa-sha512
+	// http://www.w3.org/2001/04/xmlenc#sha512
+	// http://www.w3.org/2001/04/xmldsig-more#rsa-sha512
 	// S1Jc/6AgPplPSLYKNss2bE5E+wR+gCEKazomuA3qf5DKk5KOU2KZUiucBHhe0zOKT4qdD11+gXd8f02MNSYiWQ==
 	// LamV9eA/fAQ0vDALDDW1Vpf4t94KNkXzUcJOVBsvAdLqjd6V3p8tzd8iLtLkmpu+KIzVnAKaVg5tx8qVkldu6dImc09Tox2SUTGEXj/6PNKrl49MuQINpzek4dmCI3txPf7FxTP/ck91k6/N2vvIZxgGQenI2QYLuH3h++GlbtQWIpo1CDadlFdsQ6VJASmuH5bo81ed2uLAUva4w4sNP6TMK32Mq48v8tOGCP60gBiXzHjoT4kEg1HBMVuIgR9SYfzXMo5okfv5MEZZ+BLlkQWgI5v0SEN8N14Im9j3CIceVw/ajOfyS72D99WgP7sxoFQIiui4jyLVgECF+jI/NQ==
 	// verify: <nil>
@@ -231,7 +225,7 @@ func ExampleXSW1() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	clonedResponse := xp.CopyNode(response, 1)
 	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
@@ -244,7 +238,7 @@ func ExampleXSW1() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(response.(types.Element), pub))
 
@@ -269,7 +263,7 @@ func ExampleXSW2() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(response.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	clonedResponse := xp.CopyNode(response, 1)
 	clonedSignature := xp.Query(clonedResponse, "ds:Signature[1]")[0]
@@ -282,7 +276,7 @@ func ExampleXSW2() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(response.(types.Element), pub))
 
@@ -298,7 +292,7 @@ func ExampleXSW3() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	evilAssertion := xp.CopyNode(assertion, 1)
 	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -310,7 +304,7 @@ func ExampleXSW3() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -326,7 +320,7 @@ func ExampleXSW4() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	evilAssertion := xp.CopyNode(assertion, 1)
 	copiedSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -342,7 +336,7 @@ func ExampleXSW4() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -358,7 +352,7 @@ func ExampleXSW5() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	assertionCopy := xp.CopyNode(evilAssertion, 1)
@@ -373,7 +367,7 @@ func ExampleXSW5() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -389,7 +383,7 @@ func ExampleXSW6() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -403,7 +397,7 @@ func ExampleXSW6() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -419,7 +413,7 @@ func ExampleXSW7() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	extensions, _ := xp.Doc.CreateElement("Extensions")
 	assertion.AddPrevSibling(extensions)
@@ -432,7 +426,7 @@ func ExampleXSW7() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -448,7 +442,7 @@ func ExampleXSW8() {
 	if err != nil {
 		log.Panic(err)
 	}
-	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "sha256")
+	xp.Sign(assertion.(types.Element), before.(types.Element), privatekey, []byte("-"), "", "rsa256")
 
 	evilAssertion := xp.Query(nil, "saml:Assertion[1]")[0]
 	originalSignature := xp.Query(evilAssertion, "ds:Signature[1]")[0]
@@ -463,7 +457,7 @@ func ExampleXSW8() {
 
 	block, _ := pem.Decode(privatekey)
 	priv, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
-	pub := []*rsa.PublicKey{&priv.PublicKey}
+	pub := []crypto.PublicKey{&priv.PublicKey}
 
 	fmt.Printf("verify: %v\n", xp.VerifySignature(assertion.(types.Element), pub))
 
@@ -576,7 +570,7 @@ func TestEncryptAndDecrypt(t *testing.T) {
 		log.Panic(err)
 	}
 	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
-	xp.Encrypt(assertion, &pk.PublicKey)
+	xp.Encrypt(assertion, "saml:EncryptedAssertion", &pk.(*rsa.PrivateKey).PublicKey)
 	encrypted := xp.PP()
 
 	// Decrypt
@@ -600,19 +594,16 @@ func TestValidateSchema(t *testing.T) {
 
 	// Build document
 	xp := NewXpFromFile("testdata/response.xml")
-	errs, err := xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
-	gotExpected(len(errs), 0, "Unexpected number of errors", t)
+	err := xp.SchemaValidate()
 	gotExpected(err, nil, "Unexpected error", t)
 
 	// Make the document schema-invalid
 	issuer := xp.Query(nil, "//saml:Assertion/saml:Issuer")[0]
 	parent, _ := issuer.ParentNode()
 	parent.RemoveChild(issuer)
-	errs, err = xp.SchemaValidate("schemas/saml-schema-protocol-2.0.xsd")
+	err = xp.SchemaValidate()
 
 	// Test
-	gotExpected(len(errs), 1, "Unexpected number of errors", t)
-	gotExpected(errs[0].Error(), "Element '{urn:oasis:names:tc:SAML:2.0:assertion}Subject': This element is not expected. Expected is ( {urn:oasis:names:tc:SAML:2.0:assertion}Issuer ).", "Unexpected error", t)
 	gotExpected(err.Error(), "schema validation failed", "Unexpected error", t)
 }
 
