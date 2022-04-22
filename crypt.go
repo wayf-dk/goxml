@@ -489,3 +489,8 @@ func Hash(h crypto.Hash, data string) []byte {
 	io.WriteString(digest, data)
 	return digest.Sum(nil)
 }
+
+func (xp *Xp) DomSha1SumToBase64() string {
+	hash := sha1.Sum([]byte(xp.C14n(nil, "")))
+	return base64.StdEncoding.EncodeToString(append(hash[:]))
+}
