@@ -144,6 +144,16 @@ func ExampleQueryMulti() {
 	// [madpe@dtu.dk Mads Freek Petersen Mads Freek Petersen da-DK Danmarks Tekniske Universitet madpe@dtu.dk staff urn:mace:terena.org:schac:personalUniqueID:dk:CPR:2408590763 2 urn:mace:terena.org:tcs:escience-user dtu.dk urn:mace:terena.org:schac:homeOrganizationType:eu:higherEducationalInstitution WAYF-DK-e13a9b00ecfc2d34f2d3d1f349ddc739a73353a3 1959 19590824]
 }
 
+func ExampleQueryMultiMulti() {
+	xp := NewXpFromFile("testdata/testmetadata.xml")
+	xpRes := xp.QueryMultiMulti(nil, `md:SPSSODescriptor/md:KeyDescriptor[@use="encryption"]`, []string{`.//ds:X509Certificate`, `.//md:EncryptionMethod/@Algorithm`})
+	fmt.Printf("%v\n", xpRes[0])
+	fmt.Printf("%v\n", xpRes[1])
+	// Output:
+    // [[abc] [def]]
+    // [[http://www.w3.org/2009/xmlenc11#aes128-gcm http://www.w3.org/2009/xmlenc11#aes192-gcm] [http://www.w3.org/2009/xmlenc11#aes256-gcm http://www.w3.org/2001/04/xmlenc#aes128-cbc]]
+}
+
 func ExampleEmptyDoc() {
 	xp := NewXpFromFile("testdata/emptydoc.xml")
 	fmt.Println(xp.Doc.Dump(false))
@@ -465,7 +475,7 @@ func ExampleXSW8() {
 	// verify: <nil>
 }
 
-func xExampleQueryDashP11() {
+func ExampleQueryDashP1() {
 	for range [1]int{} {
 
 		xp := NewXpFromFile("testdata/response.xml")
@@ -474,14 +484,14 @@ func xExampleQueryDashP11() {
 		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]`, "banton", nil)
 		xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "xxx", nil)
 
-		/*
-		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
-		   xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "\x1b", nil)
-		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
-		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]"))
-		   fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]"))
-		   fmt.Println(i, xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]"))
-		*/
+
+       fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
+       xp.QueryDashP(nil, `saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]`, "\x1b", nil)
+       fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[4]"))
+       fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[3]"))
+       fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[2]"))
+       fmt.Println(xp.Query1(nil, "saml:Assertion/saml:AuthnStatement/saml:AuthnContext/saml:AuthenticatingAuthority[1]"))
+
 	}
 	// Output:
 	// xxx
@@ -555,6 +565,21 @@ func ExampleQueryDashP3() {
 	//                 ID="zf0de122f115e3bb7e0c2eebcc4537ac44189c6dc"/>
 }
 
+
+func ExampleQueryDashP4() {
+    xp := NewXpFromFile("testdata/testmetadata.xml")
+    before := xp.Query(nil, `./md:SPSSODescriptor/md:KeyDescriptor[@use="encryption"]`)
+    xp.QueryDashP(nil, `/md:SPSSODescriptor/md:KeyDescriptor[0][@use="encryption"]/ds:KeyInfo/ds:X509Data/ds:X509Certificate`, "cert", before[0])
+    //fmt.Println(xp.PP())
+    xp.QueryDashP(nil, `/md:SPSSODescriptor/md:KeyDescriptor[@use="encryption"][1]/md:EncryptionMethod/@Algorithm`, "cbc", nil)
+
+    fmt.Println(xp.Query1(nil, `./md:SPSSODescriptor/md:KeyDescriptor[@use="encryption"]/ds:KeyInfo/ds:X509Data/ds:X509Certificate`))
+    fmt.Println(xp.Query1(nil, `./md:SPSSODescriptor/md:KeyDescriptor[@use="encryption"][1]/md:EncryptionMethod/@Algorithm`))
+	// Output:
+	// cert
+	// cbc
+}
+
 func TestEncryptAndDecrypt(t *testing.T) {
 
 	// Build document
@@ -570,7 +595,7 @@ func TestEncryptAndDecrypt(t *testing.T) {
 		log.Panic(err)
 	}
 	pk, _ := Pem2PrivateKey(privatekey, []byte("-"))
-	xp.Encrypt(assertion, "saml:EncryptedAssertion", &pk.(*rsa.PrivateKey).PublicKey)
+	xp.Encrypt(assertion, "saml:EncryptedAssertion", &pk.(*rsa.PrivateKey).PublicKey, []string{})
 	encrypted := xp.PP()
 
 	// Decrypt
