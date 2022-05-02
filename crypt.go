@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -90,11 +89,11 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey)
 	digestMethod := xp.Query1(signedInfo, "ds:Reference/ds:DigestMethod/@Algorithm")
 	nsPrefix := xp.Query1(signature, ".//ec:InclusiveNamespaces/@PrefixList")
 
-    dgm, ok := DigestMethods[digestMethod]
-    if !ok {
-        config.PP(digestMethod, xp.PP())
-    	return fmt.Errorf("Unknown digestMethod")
-    }
+	dgm, ok := DigestMethods[digestMethod]
+	if !ok {
+		config.PP(digestMethod, xp.PP())
+		return fmt.Errorf("Unknown digestMethod")
+	}
 
 	nextsibling, _ := signature.NextSibling()
 	context.RemoveChild(signature)
@@ -176,20 +175,77 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 // Encrypt the context with the given publickey
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
-func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey) (err error) {
-	ects := xp.QueryDashP(nil, elementName+"/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", nil)
-	xp.QueryDashP(ects, `xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#aes256-gcm"]`, "", nil)
-	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod[@Algorithm="http://www.w3.org/2009/xmlenc11#rsa-oaep"]`, "", nil)
-	xp.QueryDashP(ecm, `ds:DigestMethod[@Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"]`, "", nil)
-	xp.QueryDashP(ecm, `xenc11:MGF[@Algorithm="http://www.w3.org/2009/xmlenc11#mgf1sha256"]`, "", nil)
+func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey, encryptionAlgorithms []string) (err error) {
+	keyEncryptionMethods := map[string]string{
+		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": "http://www.w3.org/2000/09/xmldsig#sha1",
+		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        "http://www.w3.org/2001/04/xmlenc#sha256",
+	}
+	digestMethods := map[string]crypto.Hash{
+		"http://www.w3.org/2000/09/xmldsig#sha1":  crypto.SHA1,
+		"http://www.w3.org/2001/04/xmlenc#sha256": crypto.SHA256,
+	}
 
-	sessionkey, ciphertext, err := encryptAESGCM([]byte(context.ToString(1, true)))
+	type encParams struct {
+		keySize int
+		mode    string
+	}
+
+	encryptionMethods := map[string]encParams{
+		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc"},
+		"http://www.w3.org/2009/xmlenc11#aes192-cbc":  {192, "cbc"},
+		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc"},
+		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm"},
+		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm"},
+		"http://www.w3.org/2009/xmlenc11#aes256-gcm":  {256, "gcm"},
+	}
+
+	// Append the defaults so we are sure we will find one ...
+	encryptionAlgorithms = append(encryptionAlgorithms, config.EncryptionAlgorithmsDefaults...)
+	var keyEncryptionMethod, encryptionMethod string
+	var digestMethod string
+	var params encParams
+	var ok bool
+	for _, encryptionMethod = range encryptionAlgorithms {
+		if params, ok = encryptionMethods[encryptionMethod]; ok {
+			break
+		}
+	}
+	for _, keyEncryptionMethod = range encryptionAlgorithms {
+		if digestMethod, ok = keyEncryptionMethods[keyEncryptionMethod]; ok {
+			break
+		}
+	}
+
+	ects := xp.QueryDashP(nil, elementName+"/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", nil)
+	xp.QueryDashP(ects, `xenc:EncryptionMethod/@Algorithm`, encryptionMethod, nil)
+	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm`, keyEncryptionMethod, nil)
+	xp.QueryDashP(ecm, `ds:DigestMethod/@Algorithm`, digestMethod, nil)
+
+    var sessionkey, ciphertext []byte
+
+
+	switch params.mode {
+	case "gcm":
+		sessionkey, ciphertext, err = encryptAESGCM([]byte(context.ToString(1, true)), params.keySize)
+		if err != nil {
+			return
+		}
+
+	case "cbc":
+		sessionkey, ciphertext, err = encryptAESCBC([]byte(context.ToString(1, true)), params.keySize)
+		if err != nil {
+			return
+		}
+	}
+
+	hash := digestMethods[digestMethod]
+	encryptedSessionkey, err := rsa.EncryptOAEP(hash.New(), rand.Reader, publickey, sessionkey, nil)
 	if err != nil {
 		return
 	}
-	encryptedSessionkey, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publickey, sessionkey, nil)
-	if err != nil {
-		return
+
+	if hash == crypto.SHA256 {
+		xp.QueryDashP(ecm, `xenc11:MGF[@Algorithm="http://www.w3.org/2009/xmlenc11#mgf1sha256"]`, "", nil)
 	}
 
 	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(encryptedSessionkey), nil)
