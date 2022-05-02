@@ -306,6 +306,54 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	return
 }
 
+// QueryMultiMulti function to get the content of the nodes from a xpath query, and a list of subqueries
+// as a slice of slice of slice of strings
+// A QueryMulti call for each element might not reflect the structure properly
+func (xp *Xp) QueryMultiMulti(context types.Node, path string, elements []string) (res [][][]string) {
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+	x := xp.find(context, path)
+	nodeList := x.NodeList()
+	res = make([][][]string, len(elements))
+	for j, _ := range elements {
+		res[j] = make([][]string, len(nodeList))
+	}
+	switch x.Type() {
+	case xpath.NodeSetType:
+		for i, node := range nodeList {
+			for j, element := range elements {
+				z := xp.find(node, element)
+				switch z.Type() {
+				case xpath.NodeSetType:
+					res[j][i] = []string{}
+					for _, node := range z.NodeList() {
+						res[j][i] = append(res[j][i], strings.TrimSpace(node.NodeValue()))
+					}
+				case xpath.StringType:
+					res[j][i] = []string{clib.XMLXPathObjectString(z)}
+				default:
+					res[j][i] = []string{fmt.Sprintf("%v", z)}
+				}
+				z.Free()
+			}
+		}
+	default:
+		panic("QueryMultiMulti problem")
+	}
+	x.Free()
+	return
+}
+
+func Flatten(slice [][]string) (res []string) {
+    res = []string{}
+    for _, i := range slice {
+        for _, j := range i {
+            res = append(res, j)
+        }
+    }
+    return
+}
+
 // Query1 Utility function to get the content of the first node from a xpath query
 // as a string
 func (xp *Xp) Query1(context types.Node, path string) string {
