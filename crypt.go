@@ -336,8 +336,8 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (pk interface{}, err error) {
 }
 
 // encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext using CBC
-func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
-	key = make([]byte, 32)
+func encryptAESCBC(plaintext []byte, keySize int) (key, ciphertext []byte, err error) {
+	key = make([]byte, keySize/8)
 	if _, err = io.ReadFull(rand.Reader, key); err != nil {
 		return
 	}
@@ -362,8 +362,8 @@ func encryptAESCBC(plaintext []byte) (key, ciphertext []byte, err error) {
 }
 
 // encryptAESGCM encrypts the plaintext with a generated random key and returns both the key and the ciphertext using GCM
-func encryptAESGCM(plaintext []byte) (key, ciphertext []byte, err error) {
-	key = make([]byte, 32)
+func encryptAESGCM(plaintext []byte, keySize int) (key, ciphertext []byte, err error) {
+	key = make([]byte, keySize/8)
 	if _, err = io.ReadFull(rand.Reader, key); err != nil {
 		return
 	}
