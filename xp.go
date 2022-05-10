@@ -378,7 +378,7 @@ func parse(xpath string) (path []string) {
 				buf += z
 			} else {
 			    if slashed {
-			        buf += "//"
+			        buf += ".//"
 			    } else {
 			        if buf != "" {
     				    path = append(path, buf)

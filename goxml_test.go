@@ -232,9 +232,9 @@ func ExampleParser1() {
     fmt.Println(parse(`//abc/def[@abc="1/2/3"][1]//hij[@abc='1/2/3'][1]/xyz/@abc`))
     fmt.Println(parse(`.//abc/def[@abc="1/2/3"][1]//hij[@abc='1/2/3'][1]/xyz/@abc`))
     // Output:
-    // [abc def[@abc="1/2/3"][1] //hij[@abc='1/2/3'][1] xyz @abc]
-    // [//abc def[@abc="1/2/3"][1] //hij[@abc='1/2/3'][1] xyz @abc]
-    // [. //abc def[@abc="1/2/3"][1] //hij[@abc='1/2/3'][1] xyz @abc]
+    // [abc def[@abc="1/2/3"][1] .//hij[@abc='1/2/3'][1] xyz @abc]
+    // [.//abc def[@abc="1/2/3"][1] .//hij[@abc='1/2/3'][1] xyz @abc]
+    // [. .//abc def[@abc="1/2/3"][1] .//hij[@abc='1/2/3'][1] xyz @abc]
 }
 
 
