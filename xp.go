@@ -366,26 +366,38 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 
 // Very poor mans "parser" for splitting xpaths by / - just enough for our purpose - allowing /'s in quoted strings
 func parse(xpath string) (path []string) {
+    var quoted1, quoted2, slashed bool
 	path = []string{}
 	buf := ""
-	quoted := false
 
 	for _, x := range xpath {
 		z := string(x)
 		switch x {
 		case '/':
-			switch quoted {
-			case true:
+			if quoted1 || quoted2 {
 				buf += z
-			case false:
-				path = append(path, buf)
-				buf = ""
+			} else {
+			    if slashed {
+			        buf += "//"
+			    } else {
+			        if buf != "" {
+    				    path = append(path, buf)
+	    			    buf = ""
+	    			}
+				}
 			}
+			slashed = !slashed
 		case '"':
 			buf += z
-			quoted = !quoted
+			quoted2 = !quoted2
+			slashed = false
+		case '\'':
+			buf += z
+			quoted1 = !quoted1
+			slashed = false
 		default:
 			buf += z
+			slashed = false
 		}
 	}
 	path = append(path, buf)
