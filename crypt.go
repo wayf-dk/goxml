@@ -268,6 +268,8 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 	decrypt := decryptGCM
 	digestAlgorithm := crypto.SHA1
 	mgfAlgorithm := crypto.SHA1
+	hsmDigestAlgorithm := "CKM_SHA_1"
+
 
 	switch keyEncryptionMethod {
 	case "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p":
@@ -278,6 +280,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 			mgfAlgorithm = crypto.SHA1
 		case "http://www.w3.org/2009/xmlenc11#mgf1sha256":
 			mgfAlgorithm = crypto.SHA256
+			hsmDigestAlgorithm = "CKM_SHA256"
 		default:
 			return NewWerror("unsupported MGF", "MGF: "+MGF)
 		}
@@ -326,7 +329,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 	var sessionkey []byte
 	switch bytes.HasPrefix(privatekey, []byte("hsm:")) {
 	case true:
-		sessionkey, err = callHSM("decrypt", encryptedKeybyte, string(privatekey), "CKM_RSA_PKCS_OAEP", "CKM_SHA_1")
+		sessionkey, err = callHSM("decrypt", encryptedKeybyte, string(privatekey), "CKM_RSA_PKCS_OAEP", hsmDigestAlgorithm)
 	case false:
 		priv, err := Pem2PrivateKey(privatekey, pw)
 		if err != nil {
