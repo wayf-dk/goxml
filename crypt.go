@@ -22,9 +22,30 @@ import (
 	"x.config"
 )
 
+type (
+	encParams struct {
+		keySize int
+		mode    string
+	}
+)
+
 var (
 	DigestMethods  = map[string]config.CryptoMethod{}
 	SigningMethods = map[string]config.CryptoMethod{}
+
+	KeyEncryptionMethods = map[string]string{
+		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": "http://www.w3.org/2000/09/xmldsig#sha1",
+		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        "http://www.w3.org/2001/04/xmlenc#sha256",
+	}
+
+	EncryptionMethods = map[string]encParams{
+		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc"},
+		"http://www.w3.org/2009/xmlenc11#aes192-cbc":  {192, "cbc"},
+		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc"},
+		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm"},
+		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm"},
+		"http://www.w3.org/2009/xmlenc11#aes256-gcm":  {256, "gcm"},
+	}
 )
 
 func init() {
@@ -176,27 +197,9 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 // Hardcoded to aes256-cbc for the symetric part and
 // rsa-oaep-mgf1p and sha1 for the rsa part
 func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey, encryptionAlgorithms []string) (err error) {
-	keyEncryptionMethods := map[string]string{
-		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": "http://www.w3.org/2000/09/xmldsig#sha1",
-		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        "http://www.w3.org/2001/04/xmlenc#sha256",
-	}
 	digestMethods := map[string]crypto.Hash{
 		"http://www.w3.org/2000/09/xmldsig#sha1":  crypto.SHA1,
 		"http://www.w3.org/2001/04/xmlenc#sha256": crypto.SHA256,
-	}
-
-	type encParams struct {
-		keySize int
-		mode    string
-	}
-
-	encryptionMethods := map[string]encParams{
-		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc"},
-		"http://www.w3.org/2009/xmlenc11#aes192-cbc":  {192, "cbc"},
-		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc"},
-		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm"},
-		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm"},
-		"http://www.w3.org/2009/xmlenc11#aes256-gcm":  {256, "gcm"},
 	}
 
 	// Append the defaults so we are sure we will find one ...
@@ -206,12 +209,12 @@ func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.Pub
 	var params encParams
 	var ok bool
 	for _, encryptionMethod = range encryptionAlgorithms {
-		if params, ok = encryptionMethods[encryptionMethod]; ok {
+		if params, ok = EncryptionMethods[encryptionMethod]; ok {
 			break
 		}
 	}
 	for _, keyEncryptionMethod = range encryptionAlgorithms {
-		if digestMethod, ok = keyEncryptionMethods[keyEncryptionMethod]; ok {
+		if digestMethod, ok = KeyEncryptionMethods[keyEncryptionMethod]; ok {
 			break
 		}
 	}
@@ -221,8 +224,7 @@ func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.Pub
 	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm`, keyEncryptionMethod, nil)
 	xp.QueryDashP(ecm, `ds:DigestMethod/@Algorithm`, digestMethod, nil)
 
-    var sessionkey, ciphertext []byte
-
+	var sessionkey, ciphertext []byte
 
 	switch params.mode {
 	case "gcm":
@@ -269,7 +271,6 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 	digestAlgorithm := crypto.SHA1
 	mgfAlgorithm := crypto.SHA1
 	hsmDigestAlgorithm := "CKM_SHA_1"
-
 
 	switch keyEncryptionMethod {
 	case "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p":
