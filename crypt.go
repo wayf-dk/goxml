@@ -40,7 +40,7 @@ var (
 
 	EncryptionMethods = map[string]encParams{
 		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc"},
-		"http://www.w3.org/2009/xmlenc11#aes192-cbc":  {192, "cbc"},
+		"http://www.w3.org/2001/04/xmlenc#aes192-cbc":  {192, "cbc"},
 		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc"},
 		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm"},
 		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm"},
