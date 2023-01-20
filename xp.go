@@ -278,18 +278,23 @@ func (xp *Xp) find(context types.Node, path string) (types.XPathResult, error) {
 func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	x := xp.find(context, path)
-	switch x.Type() {
-	case xpath.NodeSetType:
-		for _, node := range x.NodeList() {
-			res = append(res, strings.TrimSpace(node.NodeValue()))
-		}
-	case xpath.StringType:
-		res = []string{clib.XMLXPathObjectString(x)}
-	default:
-		res = []string{fmt.Sprintf("%v", x)}
+	if found, err := xp.find(context, path); err == nil {
+        switch found.Type() {
+        case xpath.NodeSetType:
+            for _, node := range found.NodeList() {
+                res = append(res, strings.TrimSpace(node.NodeValue()))
+            }
+            found.Free()
+        case xpath.StringType:
+            res = []string{xpath.String(found, nil)}
+        case xpath.BooleanType:
+            res = []string{fmt.Sprintf("%v", xpath.Bool(found, nil))}
+        case xpath.NumberType:
+            res = []string{fmt.Sprintf("%v", xpath.Number(found, nil))}
+        default:
+    		panic(string(found.Type()))
+        }
 	}
-	x.Free()
 	return
 }
 
