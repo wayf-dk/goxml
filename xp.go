@@ -349,7 +349,7 @@ func Flatten(slice [][]string) (res []string) {
 // Query1 Utility function to get the content of the first node from a xpath query
 // as a string
 func (xp *Xp) Query1(context types.Node, path string) string {
-	res := xp.QueryMulti(context, path+`[1]`)
+	res := xp.QueryMulti(context, "("+path+")[1]")
 	if len(res) > 0 {
 		return res[0]
 	}
