@@ -229,41 +229,29 @@ func (xp *Xp) PPE(element types.Node) string {
 func (xp *Xp) Query(context types.Node, path string) types.NodeList {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	if context == nil {
-		context, _ = xp.Doc.DocumentElement()
-	}
-	xp.Xpath.SetContextNode(context)
-	return xpath.NodeList(xp.Xpath.Find(path))
+	return xpath.NodeList(xp.find(context, path))
 }
 
 // QueryNumber evaluates an xpath expressions that returns a number
 func (xp *Xp) QueryNumber(context types.Node, path string) (val int) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	if context != nil {
-		xp.Xpath.SetContextNode(context)
-	}
-	return int(xpath.Number(xp.Xpath.Find(path)))
+	return int(xpath.Number(xp.find(context, path)))
 }
 
 // QueryString evaluates an xpath expressions that returns a string
 func (xp *Xp) QueryString(context types.Node, path string) (val string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	if context != nil {
-		xp.Xpath.SetContextNode(context)
-	}
-	return xpath.String(xp.Xpath.Find(path))
+	return xpath.String(xp.find(context, path))
+
 }
 
 // QueryBool evaluates an xpath expressions that returns a bool
 func (xp *Xp) QueryBool(context types.Node, path string) bool {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	if context != nil {
-		xp.Xpath.SetContextNode(context)
-	}
-	return xpath.Bool(xp.Xpath.Find(path))
+	return xpath.Bool(xp.find(context, path))
 }
 
 // QueryXMLBool evaluates an xpath element that is XML boolean ie 1 or true - '.' works for both elements and attributes
