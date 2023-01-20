@@ -304,7 +304,7 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 func (xp *Xp) QueryMultiMulti(context types.Node, path string, elements []string) (res [][][]string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
-	x := xp.find(context, path)
+	x, _ := xp.find(context, path)
 	nodeList := x.NodeList()
 	res = make([][][]string, len(elements))
 	for j, _ := range elements {
@@ -314,7 +314,7 @@ func (xp *Xp) QueryMultiMulti(context types.Node, path string, elements []string
 	case xpath.NodeSetType:
 		for i, node := range nodeList {
 			for j, element := range elements {
-				z := xp.find(node, element)
+				z, _ := xp.find(node, element)
 				switch z.Type() {
 				case xpath.NodeSetType:
 					res[j][i] = []string{}
