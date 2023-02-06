@@ -11,6 +11,7 @@ import (
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -23,9 +24,19 @@ import (
 )
 
 type (
+	keyEncParams struct {
+		digest, alg string
+	}
+
 	encParams struct {
-		keySize int
-		mode    string
+		keySize   int
+		mode, enc string
+	}
+
+	encryptionResult struct {
+		EncryptedSessionkey, Iv, CipherText, AuthTag, OAEPparams   []byte
+		EncryptionMethod, KeyEncryptionMethod, DigestMethod, Label string
+		Alg, Enc                                                   string
 	}
 )
 
@@ -33,18 +44,19 @@ var (
 	DigestMethods  = map[string]config.CryptoMethod{}
 	SigningMethods = map[string]config.CryptoMethod{}
 
-	KeyEncryptionMethods = map[string]string{
-		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": "http://www.w3.org/2000/09/xmldsig#sha1",
-		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        "http://www.w3.org/2001/04/xmlenc#sha256",
+	KeyEncryptionMethods = map[string]keyEncParams{
+		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA1_5"},
+		//"http://www.w3.org/2009/xmlenc11#rsa-oaep": {"http://www.w3.org/2001/04/xmlenc#sha256", "RSA-OAEP-256"},
+		"http://www.w3.org/2009/xmlenc11#rsa-oaep": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA-OAEP"},
 	}
 
 	EncryptionMethods = map[string]encParams{
-		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc"},
-		"http://www.w3.org/2001/04/xmlenc#aes192-cbc":  {192, "cbc"},
-		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc"},
-		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm"},
-		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm"},
-		"http://www.w3.org/2009/xmlenc11#aes256-gcm":  {256, "gcm"},
+		"http://www.w3.org/2001/04/xmlenc#aes128-cbc": {128, "cbc", "A128CBC-HS256"},
+		"http://www.w3.org/2001/04/xmlenc#aes192-cbc": {192, "cbc", "A192CBC-HS384"},
+		"http://www.w3.org/2001/04/xmlenc#aes256-cbc": {256, "cbc", "A256CBC-HS512"},
+		"http://www.w3.org/2009/xmlenc11#aes128-gcm":  {128, "gcm", "A128GCM"},
+		"http://www.w3.org/2009/xmlenc11#aes192-gcm":  {192, "gcm", "A192GCM"},
+		"http://www.w3.org/2009/xmlenc11#aes256-gcm":  {256, "gcm", "A256GCM"},
 	}
 )
 
@@ -112,7 +124,6 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey)
 
 	dgm, ok := DigestMethods[digestMethod]
 	if !ok {
-		config.PP(digestMethod, xp.PP())
 		return fmt.Errorf("Unknown digestMethod")
 	}
 
@@ -193,65 +204,213 @@ func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
 	return callHSM("sign", data, string(privatekey), "CKM_RSA_PKCS", "")
 }
 
-// Encrypt the context with the given publickey
-// Hardcoded to aes256-cbc for the symetric part and
-// rsa-oaep-mgf1p and sha1 for the rsa part
-func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey, encryptionAlgorithms []string) (err error) {
-	digestMethods := map[string]crypto.Hash{
-		"http://www.w3.org/2000/09/xmldsig#sha1":  crypto.SHA1,
-		"http://www.w3.org/2001/04/xmlenc#sha256": crypto.SHA256,
+func Jwe(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []string) (jwe string, err error) {
+	enc, err := BaseEncrypt(cleartext, publickey, encryptionAlgorithms, true)
+	if err != nil {
+		return
 	}
+	jwe = enc.Label + "." +
+		base64.RawURLEncoding.EncodeToString(enc.EncryptedSessionkey) + "." +
+		base64.RawURLEncoding.EncodeToString(enc.Iv) + "." +
+		base64.RawURLEncoding.EncodeToString(enc.CipherText) + "." +
+		base64.RawURLEncoding.EncodeToString(enc.AuthTag)
 
-	// Append the defaults so we are sure we will find one ...
-	encryptionAlgorithms = append(encryptionAlgorithms, config.EncryptionAlgorithmsDefaults...)
-	var keyEncryptionMethod, encryptionMethod string
-	var digestMethod string
-	var params encParams
-	var ok bool
-	for _, encryptionMethod = range encryptionAlgorithms {
-		if params, ok = EncryptionMethods[encryptionMethod]; ok {
-			break
-		}
-	}
-	for _, keyEncryptionMethod = range encryptionAlgorithms {
-		if digestMethod, ok = KeyEncryptionMethods[keyEncryptionMethod]; ok {
-			break
-		}
-	}
+	return
+}
 
-	ects := xp.QueryDashP(nil, elementName+"/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", nil)
-	xp.QueryDashP(ects, `xenc:EncryptionMethod/@Algorithm`, encryptionMethod, nil)
-	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm`, keyEncryptionMethod, nil)
-	xp.QueryDashP(ecm, `ds:DigestMethod/@Algorithm`, digestMethod, nil)
-
-	var sessionkey, ciphertext []byte
-
-	switch params.mode {
-	case "gcm":
-		sessionkey, ciphertext, err = encryptAESGCM([]byte(context.ToString(1, true)), params.keySize)
-		if err != nil {
-			return
-		}
-
-	case "cbc":
-		sessionkey, ciphertext, err = encryptAESCBC([]byte(context.ToString(1, true)), params.keySize)
+func DeJwe(jwe string, privatekey, pw []byte) (jwt string, err error) {
+	enc := &encryptionResult{}
+	partsb64 := strings.Split(jwe, ".")
+	parts := [5][]byte{}
+	for i, partb64 := range partsb64 {
+		parts[i], err = base64.RawURLEncoding.DecodeString(partb64)
 		if err != nil {
 			return
 		}
 	}
+	var header map[string]string
+	err = json.Unmarshal(parts[0], &header)
+	if err != nil {
+		return "", Wrap(err)
+	}
 
-	hash := digestMethods[digestMethod]
-	encryptedSessionkey, err := rsa.EncryptOAEP(hash.New(), rand.Reader, publickey, sessionkey, nil)
+	for kem, i := range KeyEncryptionMethods {
+		if header["alg"] == i.alg {
+			enc.KeyEncryptionMethod = kem
+			enc.DigestMethod = i.digest
+		}
+	}
+
+	for em, i := range EncryptionMethods {
+		if header["enc"] == i.enc {
+			enc.EncryptionMethod = em
+		}
+	}
+	enc.Label = partsb64[0]
+	enc.EncryptedSessionkey = parts[1]
+	enc.Iv = parts[2]
+	enc.CipherText = parts[3]
+	enc.AuthTag = parts[4]
+
+	jwtbyte, err := baseDecrypt(enc, privatekey, pw)
 	if err != nil {
 		return
 	}
 
-	if hash == crypto.SHA256 {
+	jwt = string(jwtbyte)
+
+	return
+}
+
+func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []string, jwe bool) (enc *encryptionResult, err error) {
+	enc = &encryptionResult{}
+
+	// Append the defaults so we are sure we will find one ...
+	algoDefaults := config.EncryptionAlgorithmsDefaults
+	if jwe { // we can't do aead-aes-cbc-hmac-sha2 yet
+    	algoDefaults = []string{"http://www.w3.org/2009/xmlenc11#aes256-gcm", "http://www.w3.org/2009/xmlenc11#rsa-oaep"}
+    }
+
+	encryptionAlgorithms = append(encryptionAlgorithms, algoDefaults...)
+	var encP encParams
+	var keyEncP keyEncParams
+	var ok bool
+
+	for _, enc.KeyEncryptionMethod = range encryptionAlgorithms {
+		if keyEncP, ok = KeyEncryptionMethods[enc.KeyEncryptionMethod]; ok {
+			break
+		}
+	}
+
+	if !ok {
+		return nil, NewWerror("KeyEncryptionMethod not found: ", enc.KeyEncryptionMethod)
+	}
+
+	enc.DigestMethod = keyEncP.digest
+	enc.Alg = keyEncP.alg
+
+	for _, enc.EncryptionMethod = range encryptionAlgorithms {
+		if encP, ok = EncryptionMethods[enc.EncryptionMethod]; ok {
+			break
+		}
+	}
+
+	if !ok {
+		return nil, NewWerror("EnctyptionMethod not found: ", enc.EncryptionMethod)
+	}
+
+	enc.Enc = encP.enc
+
+	var sessionkey []byte
+    if jwe {
+        headerMap := map[string]string{"alg": enc.Alg, "enc": enc.Enc, "kid": "wayf", "cty": "JWT"}
+        headerJson, err := json.Marshal(headerMap)
+        if err != nil {
+            return nil, err
+        }
+
+        enc.Label = base64.RawURLEncoding.EncodeToString(headerJson)
+	}
+
+    encrypt := encryptAESGCM
+	switch encP.mode {
+	case "gcm":
+	    encrypt = encryptAESGCM
+	case "cbc":
+	    encrypt = encryptAESCBC
+	}
+
+    sessionkey, enc.CipherText, enc.Iv, enc.AuthTag, err = encrypt(cleartext, []byte(enc.Label), encP.keySize)
+    if err != nil {
+        return
+    }
+
+	hash := config.CryptoMethods[enc.DigestMethod].Hash
+	enc.EncryptedSessionkey, err = rsa.EncryptOAEP(hash.New(), rand.Reader, publickey, sessionkey, nil)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func baseDecrypt(enc *encryptionResult, privatekey, pw []byte) (cleartext []byte, err error) {
+	decrypt := decryptGCM
+	digestAlgorithm := crypto.SHA256
+	hsmDigestAlgorithm := "CKM_SHA_1"
+
+	switch enc.DigestMethod {
+	case "http://www.w3.org/2000/09/xmldsig#sha1":
+		digestAlgorithm = crypto.SHA1
+	case "http://www.w3.org/2001/04/xmlenc#sha256":
+		digestAlgorithm = crypto.SHA256
+		hsmDigestAlgorithm = "CKM_SHA256"
+	default:
+		return nil, NewWerror("unsupported digestMethod", "digestMethod: "+enc.DigestMethod)
+	}
+
+	switch enc.EncryptionMethod {
+	case "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2001/04/xmlenc#aes192-cbc", "http://www.w3.org/2001/04/xmlenc#aes256-cbc":
+		decrypt = decryptCBC
+	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
+		decrypt = decryptGCM
+	default:
+		return nil, NewWerror("unsupported encryptionMethod", "encryptionMethod: "+enc.EncryptionMethod)
+	}
+
+	var sessionkey []byte
+	switch bytes.HasPrefix(privatekey, []byte("hsm:")) {
+	case true:
+		sessionkey, err = callHSM("decrypt", enc.EncryptedSessionkey, string(privatekey), "CKM_RSA_PKCS_OAEP", hsmDigestAlgorithm)
+	case false:
+		priv, err := Pem2PrivateKey(privatekey, pw)
+		if err != nil {
+			return nil, Wrap(err)
+		}
+
+		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv.(*rsa.PrivateKey), enc.EncryptedSessionkey, enc.OAEPparams)
+		if err != nil {
+			return nil, Wrap(err)
+		}
+	}
+
+	if err != nil {
+		return nil, Wrap(err)
+	}
+
+	switch len(sessionkey) {
+	case 16, 24, 32:
+	default:
+		return nil, fmt.Errorf("Unsupported keylength for AES %d", len(sessionkey))
+	}
+
+	cipherText := append(enc.Iv, enc.CipherText...)
+	cipherText = append(cipherText, enc.AuthTag...)
+	cleartext, err = decrypt([]byte(sessionkey), cipherText, []byte(enc.Label))
+	if err != nil {
+		return nil, Wrap(err)
+	}
+	return
+}
+
+// Encrypt the context with the given publickey
+func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.PublicKey, encryptionAlgorithms []string) (err error) {
+	cleartext := []byte(context.ToString(1, true))
+	enc, err := BaseEncrypt(cleartext, publickey, encryptionAlgorithms, false)
+	if err != nil {
+		return
+	}
+
+	ects := xp.QueryDashP(nil, elementName+"/xenc:EncryptedData/@Type", "http://www.w3.org/2001/04/xmlenc#Element", nil)
+	xp.QueryDashP(ects, `xenc:EncryptionMethod/@Algorithm`, enc.EncryptionMethod, nil)
+	ecm := xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm`, enc.KeyEncryptionMethod, nil)
+	xp.QueryDashP(ecm, `ds:DigestMethod/@Algorithm`, enc.DigestMethod, nil)
+
+	if enc.DigestMethod == "http://www.w3.org/2001/04/xmlenc#sha256" {
 		xp.QueryDashP(ecm, `xenc11:MGF[@Algorithm="http://www.w3.org/2009/xmlenc11#mgf1sha256"]`, "", nil)
 	}
 
-	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(encryptedSessionkey), nil)
-	xp.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(ciphertext), nil)
+	xp.QueryDashP(ects, `ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(enc.EncryptedSessionkey), nil)
+	xp.QueryDashP(ects, `xenc:CipherData/xenc:CipherValue`, base64.StdEncoding.EncodeToString(append(append(enc.Iv, enc.CipherText...), enc.AuthTag...)), nil)
 	RmElement(context)
 	return
 }
@@ -260,114 +419,41 @@ func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.Pub
 // The context element is removed
 func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err error) {
 	context := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
-	encryptionMethod := xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm")
-	keyEncryptionMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm")
+	mgfAlgorithm := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc11:MGF/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
-	OAEPparams := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc:OAEPparams")
-	MGF := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc11:MGF/@Algorithm")
-	encryptedKey := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue")
 
-	decrypt := decryptGCM
-	digestAlgorithm := crypto.SHA1
-	mgfAlgorithm := crypto.SHA1
-	hsmDigestAlgorithm := "CKM_SHA_1"
-
-	switch keyEncryptionMethod {
-	case "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p":
-		mgfAlgorithm = crypto.SHA1
-	case "http://www.w3.org/2009/xmlenc11#rsa-oaep":
-		switch MGF {
-		case "http://www.w3.org/2009/xmlenc11#mgf1sha1":
-			mgfAlgorithm = crypto.SHA1
-		case "http://www.w3.org/2009/xmlenc11#mgf1sha256":
-			mgfAlgorithm = crypto.SHA256
-			hsmDigestAlgorithm = "CKM_SHA256"
-		default:
-			return NewWerror("unsupported MGF", "MGF: "+MGF)
-		}
-	default:
-		return NewWerror("unsupported keyEncryptionMethod", "keyEncryptionMethod: "+keyEncryptionMethod)
+	mgfAlgorithms := map[string]string{
+		"": "http://www.w3.org/2000/09/xmldsig#sha1",
+		"http://www.w3.org/2009/xmlenc11#mgf1sha1":   "http://www.w3.org/2000/09/xmldsig#sha1",
+		"http://www.w3.org/2009/xmlenc11#mgf1sha256": "http://www.w3.org/2001/04/xmlenc#sha256",
 	}
 
-	switch digestMethod {
-	case "http://www.w3.org/2000/09/xmldsig#sha1":
-		digestAlgorithm = crypto.SHA1
-	case "http://www.w3.org/2001/04/xmlenc#sha256":
-		digestAlgorithm = crypto.SHA256
-	case "http://www.w3.org/2001/04/xmldsig-more#sha384":
-		digestAlgorithm = crypto.SHA384
-	case "http://www.w3.org/2001/04/xmlenc#sha512":
-		digestAlgorithm = crypto.SHA512
-	case "":
-		digestAlgorithm = crypto.SHA1
-	default:
-		return NewWerror("unsupported digestMethod", "digestMethod: "+digestMethod)
-	}
-
-	switch encryptionMethod {
-	case "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2001/04/xmlenc#aes192-cbc", "http://www.w3.org/2001/04/xmlenc#aes256-cbc":
-		decrypt = decryptCBC
-	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
-		decrypt = decryptGCM
-	default:
-		return NewWerror("unsupported encryptionMethod", "encryptionMethod: "+encryptionMethod)
-	}
-
-	encryptedKeybyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encryptedKey))
-	if err != nil {
-		return Wrap(err)
-	}
-
-	OAEPparamsbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(OAEPparams))
-	if err != nil {
-		return Wrap(err)
-	}
-
-	if digestAlgorithm != mgfAlgorithm {
+	if digestMethod != mgfAlgorithms[mgfAlgorithm] {
 		return errors.New("digestMethod != keyEncryptionMethod not supported")
 	}
 
-	var sessionkey []byte
-	switch bytes.HasPrefix(privatekey, []byte("hsm:")) {
-	case true:
-		sessionkey, err = callHSM("decrypt", encryptedKeybyte, string(privatekey), "CKM_RSA_PKCS_OAEP", hsmDigestAlgorithm)
-	case false:
-		priv, err := Pem2PrivateKey(privatekey, pw)
-		if err != nil {
-			return Wrap(err)
-		}
-		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv.(*rsa.PrivateKey), encryptedKeybyte, OAEPparamsbyte)
-		if err != nil {
-			return Wrap(err)
-		}
+	encryptedSessionkey, _ := base64.StdEncoding.DecodeString(xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue"))
+	oaepParams, _ := base64.StdEncoding.DecodeString(xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc:OAEPparams"))
+	cipherText, _ := base64.StdEncoding.DecodeString(xp.Query1(context, "./xenc:CipherData/xenc:CipherValue"))
+
+	enc := &encryptionResult{
+		KeyEncryptionMethod: xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/@Algorithm"),
+		EncryptionMethod:    xp.Query1(context, "./xenc:EncryptionMethod/@Algorithm"),
+		CipherText:          cipherText,
+		DigestMethod:        digestMethod,
+		OAEPparams:          oaepParams,
+		EncryptedSessionkey: encryptedSessionkey,
 	}
 
+	cleartext, err := baseDecrypt(enc, privatekey, pw)
 	if err != nil {
-		return Wrap(err)
+		return
 	}
-
-	switch len(sessionkey) {
-	case 16, 24, 32:
-	default:
-		return fmt.Errorf("Unsupported keylength for AES %d", len(sessionkey))
-	}
-
-	ciphertext := xp.Query1(context, "./xenc:CipherData/xenc:CipherValue")
-	ciphertextbyte, err := base64.StdEncoding.DecodeString(strings.TrimSpace(ciphertext))
-	if err != nil {
-		return Wrap(err)
-	}
-
-	plaintext, err := decrypt([]byte(sessionkey), ciphertextbyte)
-	if err != nil {
-		return WrapWithXp(err, xp)
-	}
-
 	response, err := encryptedAssertion.ParentNode()
 	if err != nil {
 		return WrapWithXp(err, xp)
 	}
-	decryptedAssertionElement, err := response.ParseInContext(string(plaintext), 0)
+	decryptedAssertionElement, err := response.ParseInContext(string(cleartext), 0)
 	if err != nil {
 		return WrapWithXp(err, xp)
 	}
@@ -396,7 +482,7 @@ func Pem2PrivateKey(privatekeypem, pw []byte) (pk interface{}, err error) {
 }
 
 // encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext using CBC
-func encryptAESCBC(plaintext []byte, keySize int) (key, ciphertext []byte, err error) {
+func encryptAESCBC(plaintext, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
 	key = make([]byte, keySize/8)
 	if _, err = io.ReadFull(rand.Reader, key); err != nil {
 		return
@@ -404,9 +490,9 @@ func encryptAESCBC(plaintext []byte, keySize int) (key, ciphertext []byte, err e
 	paddinglen := aes.BlockSize - len(plaintext)%aes.BlockSize
 
 	plaintext = append(plaintext, bytes.Repeat([]byte{byte(paddinglen)}, paddinglen)...)
-	ciphertext = make([]byte, aes.BlockSize+len(plaintext))
+	cipherText = make([]byte, len(plaintext))
 
-	iv := ciphertext[:aes.BlockSize]
+	iv = make([]byte, aes.BlockSize)
 	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
 		return
 	}
@@ -417,18 +503,18 @@ func encryptAESCBC(plaintext []byte, keySize int) (key, ciphertext []byte, err e
 	}
 
 	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
+	mode.CryptBlocks(cipherText, plaintext)
 	return
 }
 
 // encryptAESGCM encrypts the plaintext with a generated random key and returns both the key and the ciphertext using GCM
-func encryptAESGCM(plaintext []byte, keySize int) (key, ciphertext []byte, err error) {
+func encryptAESGCM(plaintext, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
 	key = make([]byte, keySize/8)
 	if _, err = io.ReadFull(rand.Reader, key); err != nil {
 		return
 	}
 
-	iv := make([]byte, 12)
+	iv = make([]byte, 12)
 	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
 		return
 	}
@@ -443,12 +529,16 @@ func encryptAESGCM(plaintext []byte, keySize int) (key, ciphertext []byte, err e
 		panic(err.Error())
 	}
 
-	ciphertext = append(iv, aesgcm.Seal(nil, iv, plaintext, nil)...)
+	cipherWithTag := aesgcm.Seal(nil, iv, plaintext, label)
+
+	split := len(cipherWithTag) - aesgcm.Overhead()
+	cipherText = cipherWithTag[:split]
+	authTag = cipherWithTag[split:]
 	return
 }
 
 // decryptGCM decrypts the ciphertext using the supplied key
-func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
+func decryptGCM(key, ciphertext, label []byte) (plaintext []byte, err error) {
 	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
 		return nil, errors.New("Not enough data to decrypt for AES-GCM")
 	}
@@ -466,7 +556,7 @@ func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 		return
 	}
 
-	plaintext, err = aesgcm.Open(nil, iv, ciphertext, nil)
+	plaintext, err = aesgcm.Open(nil, iv, ciphertext, label)
 	if err != nil {
 		return
 	}
@@ -474,7 +564,7 @@ func decryptGCM(key, ciphertext []byte) (plaintext []byte, err error) {
 }
 
 // decryptCBC decrypts the ciphertext using the supplied key
-func decryptCBC(key, ciphertext []byte) (plaintext []byte, err error) {
+func decryptCBC(key, ciphertext, label []byte) (plaintext []byte, err error) {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
