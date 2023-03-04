@@ -46,8 +46,7 @@ var (
 
 	KeyEncryptionMethods = map[string]keyEncParams{
 		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA1_5"},
-		//"http://www.w3.org/2009/xmlenc11#rsa-oaep": {"http://www.w3.org/2001/04/xmlenc#sha256", "RSA-OAEP-256"},
-		"http://www.w3.org/2009/xmlenc11#rsa-oaep": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA-OAEP"},
+		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        {"http://www.w3.org/2001/04/xmlenc#sha256", "RSA-OAEP-256"},
 	}
 
 	EncryptionMethods = map[string]encParams{
@@ -267,9 +266,6 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 
 	// Append the defaults so we are sure we will find one ...
 	algoDefaults := config.EncryptionAlgorithmsDefaults
-	if jwe { // we can't do aead-aes-cbc-hmac-sha2 yet
-    	algoDefaults = []string{"http://www.w3.org/2009/xmlenc11#aes256-gcm", "http://www.w3.org/2009/xmlenc11#rsa-oaep"}
-    }
 
 	encryptionAlgorithms = append(encryptionAlgorithms, algoDefaults...)
 	var encP encParams
@@ -288,6 +284,10 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 
 	enc.DigestMethod = keyEncP.digest
 	enc.Alg = keyEncP.alg
+	if jwe && enc.Alg == "RSA-OAEP-256" {
+		enc.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1"
+		enc.Alg = "RSA-OAEP"
+	}
 
 	for _, enc.EncryptionMethod = range encryptionAlgorithms {
 		if encP, ok = EncryptionMethods[enc.EncryptionMethod]; ok {
@@ -302,28 +302,28 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 	enc.Enc = encP.enc
 
 	var sessionkey []byte
-    if jwe {
-        headerMap := map[string]string{"alg": enc.Alg, "enc": enc.Enc, "kid": "wayf", "cty": "JWT"}
-        headerJson, err := json.Marshal(headerMap)
-        if err != nil {
-            return nil, err
-        }
+	if jwe {
+		headerMap := map[string]string{"alg": enc.Alg, "enc": enc.Enc, "kid": "wayf", "cty": "JWT"}
+		headerJson, err := json.Marshal(headerMap)
+		if err != nil {
+			return nil, err
+		}
 
-        enc.Label = base64.RawURLEncoding.EncodeToString(headerJson)
+		enc.Label = base64.RawURLEncoding.EncodeToString(headerJson)
 	}
 
-    encrypt := encryptAESGCM
+	encrypt := encryptAESGCM
 	switch encP.mode {
 	case "gcm":
-	    encrypt = encryptAESGCM
+		encrypt = encryptAESGCM
 	case "cbc":
-	    encrypt = encryptAESCBC
+		encrypt = encryptAESCBC
 	}
 
-    sessionkey, enc.CipherText, enc.Iv, enc.AuthTag, err = encrypt(cleartext, []byte(enc.Label), encP.keySize)
-    if err != nil {
-        return
-    }
+	sessionkey, enc.CipherText, enc.Iv, enc.AuthTag, err = encrypt(cleartext, []byte(enc.Label), encP.keySize)
+	if err != nil {
+		return
+	}
 
 	hash := config.CryptoMethods[enc.DigestMethod].Hash
 	enc.EncryptedSessionkey, err = rsa.EncryptOAEP(hash.New(), rand.Reader, publickey, sessionkey, nil)
