@@ -47,6 +47,7 @@ var (
 	KeyEncryptionMethods = map[string]keyEncParams{
 		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA1_5"},
 		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        {"http://www.w3.org/2001/04/xmlenc#sha256", "RSA-OAEP-256"},
+		"http://www.wayf.dk/2009/xmlenc11#rsa-oaep-sha1":  {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA-OAEP"},
 	}
 
 	EncryptionMethods = map[string]encParams{
@@ -284,10 +285,6 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 
 	enc.DigestMethod = keyEncP.digest
 	enc.Alg = keyEncP.alg
-	if jwe && enc.Alg == "RSA-OAEP-256" {
-		enc.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1"
-		enc.Alg = "RSA-OAEP"
-	}
 
 	for _, enc.EncryptionMethod = range encryptionAlgorithms {
 		if encP, ok = EncryptionMethods[enc.EncryptionMethod]; ok {
