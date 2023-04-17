@@ -9,10 +9,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -38,6 +36,7 @@ type (
 		EncryptionMethod, KeyEncryptionMethod, DigestMethod, Label string
 		Alg, Enc                                                   string
 	}
+	HSMKey []byte
 )
 
 var (
@@ -70,7 +69,7 @@ func init() {
 // Sign the given context with the given private key - which is a PEM or hsm: key
 // A hsm: key is a urn 'key' that points to a specific key/action in a goeleven interface to a HSM
 // See https://github.com/wayf-dk/
-func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo string) (err error) {
+func (xp *Xp) Sign(context, before types.Node, privatekey crypto.PrivateKey, cert, algo string) (err error) {
 	contextHash := Hash(config.CryptoMethods[algo].Hash, xp.C14n(context, ""))
 	contextDigest := base64.StdEncoding.EncodeToString(contextHash)
 
@@ -88,7 +87,7 @@ func (xp *Xp) Sign(context, before types.Node, privatekey, pw []byte, cert, algo
 	signedInfoC14n := xp.C14n(signedInfo, "")
 	digest := Hash(config.CryptoMethods[algo].Hash, signedInfoC14n)
 
-	signaturevalue, err := Sign(digest, privatekey, pw, algo)
+	signaturevalue, err := Sign(digest, privatekey, algo)
 	if err != nil {
 		return
 	}
@@ -162,6 +161,21 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey)
 	return
 }
 
+// Sign the digest with the privvate key and algo
+func Sign(digest []byte, privatekey crypto.PrivateKey, algo string) (signaturevalue []byte, err error) {
+    switch pk := privatekey.(type) {
+    case *rsa.PrivateKey:
+		signaturevalue, err = rsa.SignPKCS1v15(rand.Reader, pk, config.CryptoMethods[algo].Hash, digest)
+	case ed25519.PrivateKey:
+		signaturevalue, err = pk.Sign(rand.Reader, digest, crypto.Hash(0))
+    case HSMKey:
+        signaturevalue, err = signGoEleven(digest, pk, algo)
+    default:
+    	err = fmt.Errorf("Unsupported keytype %T", pk)
+    }
+	return
+}
+
 func Verify(pub crypto.PublicKey, algo crypto.Hash, digest, signature []byte) (err error) {
 	switch pk := pub.(type) {
 	case *rsa.PublicKey:
@@ -176,32 +190,10 @@ func Verify(pub crypto.PublicKey, algo crypto.Hash, digest, signature []byte) (e
 	return
 }
 
-// Sign the digest with the privvate key and algo
-func Sign(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
-	signFuncs := map[bool]func([]byte, []byte, []byte, string) ([]byte, error){true: signGoEleven, false: signGo}
-	signaturevalue, err = signFuncs[bytes.HasPrefix(privatekey, []byte("hsm:"))](digest, privatekey, pw, algo)
-	return
-}
-
-func signGo(digest, privatekey, pw []byte, algo string) (signaturevalue []byte, err error) {
-	var priv interface{}
-	if priv, err = Pem2PrivateKey(privatekey, pw); err != nil {
-		return
-	}
-	switch pk := priv.(type) {
-	case *rsa.PrivateKey:
-		signaturevalue, err = rsa.SignPKCS1v15(rand.Reader, pk, config.CryptoMethods[algo].Hash, digest)
-	case ed25519.PrivateKey:
-		signaturevalue, err = pk.Sign(rand.Reader, digest, crypto.Hash(0))
-	default:
-		fmt.Println("unknown")
-	}
-	return
-}
-
-func signGoEleven(digest, privatekey, pw []byte, algo string) ([]byte, error) {
+func signGoEleven(digest []byte, privatekey crypto.PrivateKey, algo string) ([]byte, error) {
 	data := append([]byte(config.CryptoMethods[algo].DerPrefix), digest...)
-	return callHSM("sign", data, string(privatekey), "CKM_RSA_PKCS", "")
+	pk, _ := privatekey.(HSMKey)
+	return callHSM("sign", data, pk, "CKM_RSA_PKCS", "")
 }
 
 func Jwe(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []string) (jwe string, err error) {
@@ -218,9 +210,12 @@ func Jwe(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []stri
 	return
 }
 
-func DeJwe(jwe string, privatekey, pw []byte) (jwt string, err error) {
-	enc := &encryptionResult{}
+func DeJwe(jwe string, privatekey crypto.PrivateKey) (jwt string, err error) {
 	partsb64 := strings.Split(jwe, ".")
+	if len(partsb64) == 3 { // jwt - we just accept it and continues
+		return jwe, nil
+	}
+	enc := &encryptionResult{}
 	parts := [5][]byte{}
 	for i, partb64 := range partsb64 {
 		parts[i], err = base64.RawURLEncoding.DecodeString(partb64)
@@ -252,7 +247,7 @@ func DeJwe(jwe string, privatekey, pw []byte) (jwt string, err error) {
 	enc.CipherText = parts[3]
 	enc.AuthTag = parts[4]
 
-	jwtbyte, err := baseDecrypt(enc, privatekey, pw)
+	jwtbyte, err := baseDecrypt(enc, privatekey)
 	if err != nil {
 		return
 	}
@@ -330,7 +325,7 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 	return
 }
 
-func baseDecrypt(enc *encryptionResult, privatekey, pw []byte) (cleartext []byte, err error) {
+func baseDecrypt(enc *encryptionResult, privatekey crypto.PrivateKey) (cleartext []byte, err error) {
 	decrypt := decryptGCM
 	digestAlgorithm := crypto.SHA256
 	hsmDigestAlgorithm := "CKM_SHA_1"
@@ -355,19 +350,16 @@ func baseDecrypt(enc *encryptionResult, privatekey, pw []byte) (cleartext []byte
 	}
 
 	var sessionkey []byte
-	switch bytes.HasPrefix(privatekey, []byte("hsm:")) {
-	case true:
-		sessionkey, err = callHSM("decrypt", enc.EncryptedSessionkey, string(privatekey), "CKM_RSA_PKCS_OAEP", hsmDigestAlgorithm)
-	case false:
-		priv, err := Pem2PrivateKey(privatekey, pw)
+	switch pk := privatekey.(type) {
+	case *rsa.PrivateKey:
+		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, pk, enc.EncryptedSessionkey, enc.OAEPparams)
 		if err != nil {
 			return nil, Wrap(err)
 		}
-
-		sessionkey, err = rsa.DecryptOAEP(digestAlgorithm.New(), rand.Reader, priv.(*rsa.PrivateKey), enc.EncryptedSessionkey, enc.OAEPparams)
-		if err != nil {
-			return nil, Wrap(err)
-		}
+	case HSMKey:
+		sessionkey, err = callHSM("decrypt", enc.EncryptedSessionkey, pk, "CKM_RSA_PKCS_OAEP", hsmDigestAlgorithm)
+	default:
+		return nil, fmt.Errorf("Unsupported privatekeytype: %t", pk)
 	}
 
 	if err != nil {
@@ -414,7 +406,7 @@ func (xp *Xp) Encrypt(context types.Node, elementName string, publickey *rsa.Pub
 
 // Decrypt decrypts the context using the given privatekey .
 // The context element is removed
-func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err error) {
+func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey crypto.PrivateKey) (err error) {
 	context := xp.Query(encryptedAssertion, "xenc:EncryptedData")[0]
 	mgfAlgorithm := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/xenc11:MGF/@Algorithm")
 	digestMethod := xp.Query1(context, "./ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod/ds:DigestMethod/@Algorithm")
@@ -442,7 +434,7 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 		EncryptedSessionkey: encryptedSessionkey,
 	}
 
-	cleartext, err := baseDecrypt(enc, privatekey, pw)
+	cleartext, err := baseDecrypt(enc, privatekey)
 	if err != nil {
 		return
 	}
@@ -459,23 +451,6 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey, pw []byte) (err
 	RmElement(encryptedAssertion)
 
 	return err
-}
-
-// Pem2PrivateKey converts a PEM encoded private key with an optional password to a *rsa.PrivateKey
-func Pem2PrivateKey(privatekeypem, pw []byte) (pk interface{}, err error) {
-	block, _ := pem.Decode(privatekeypem) // not used rest
-	derbytes := block.Bytes
-	if string(pw) != "-" {
-		if derbytes, err = x509.DecryptPEMBlock(block, pw); err != nil {
-			return nil, Wrap(err)
-		}
-	}
-	if pk, err = x509.ParsePKCS1PrivateKey(derbytes); err != nil {
-		if pk, err = x509.ParsePKCS8PrivateKey(derbytes); err != nil {
-			return nil, Wrap(err)
-		}
-	}
-	return
 }
 
 // encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext using CBC
@@ -585,7 +560,7 @@ func decryptCBC(key, ciphertext, label []byte) (plaintext []byte, err error) {
 	return
 }
 
-func callHSM(function string, data []byte, privatekey, mech, digest string) (res []byte, err error) {
+func callHSM(function string, data []byte, privatekey HSMKey, mech, digest string) (res []byte, err error) {
 	type request struct {
 		Data      string `json:"data"`
 		Mech      string `json:"mech"`
@@ -598,7 +573,7 @@ func callHSM(function string, data []byte, privatekey, mech, digest string) (res
 			Signed []byte `json:"signed"`
 		}
 	*/
-	parts := strings.SplitN(strings.TrimSpace(privatekey), ":", 3)
+	parts := strings.SplitN(strings.TrimSpace(string(privatekey)), ":", 3)
 
 	//	payload := request{
 	payload := goeleven.Request{
