@@ -43,10 +43,9 @@ var (
 	DigestMethods  = map[string]config.CryptoMethod{}
 	SigningMethods = map[string]config.CryptoMethod{}
 
-	KeyEncryptionMethods = map[string]keyEncParams{
-		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA1_5"},
+	KeyEncryptionMethods = map[string]keyEncParams{ //
+		"http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p": {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA-OAEP"},
 		"http://www.w3.org/2009/xmlenc11#rsa-oaep":        {"http://www.w3.org/2001/04/xmlenc#sha256", "RSA-OAEP-256"},
-		"http://www.wayf.dk/2009/xmlenc11#rsa-oaep-sha1":  {"http://www.w3.org/2000/09/xmldsig#sha1", "RSA-OAEP"},
 	}
 
 	EncryptionMethods = map[string]encParams{
