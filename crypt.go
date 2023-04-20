@@ -99,9 +99,9 @@ func (xp *Xp) Sign(context, before types.Node, privatekey crypto.PrivateKey, cer
 
 // VerifySignature Verify a signature for the given context and public key
 func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey) (err error) {
-	signaturelist := xp.Query(context, "ds:Signature[1]")
+	signaturelist := xp.Query(context, "ds:Signature")
 	if len(signaturelist) != 1 {
-		return fmt.Errorf("no signature found")
+		return fmt.Errorf("no of signatures found != 1")
 	}
 	signature := signaturelist[0]
 
