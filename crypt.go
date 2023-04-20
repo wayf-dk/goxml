@@ -209,14 +209,10 @@ func Jwe(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []stri
 	return
 }
 
-func DeJwe(jwe string, privatekey crypto.PrivateKey) (jwt string, err error) {
-	partsb64 := strings.Split(jwe, ".")
-	if len(partsb64) == 3 { // jwt - we just accept it and continues
-		return jwe, nil
-	}
+func DeJwe(peica []string, privatekey crypto.PrivateKey) (jwt string, err error) {
 	enc := &encryptionResult{}
 	parts := [5][]byte{}
-	for i, partb64 := range partsb64 {
+	for i, partb64 := range peica {
 		parts[i], err = base64.RawURLEncoding.DecodeString(partb64)
 		if err != nil {
 			return
@@ -240,7 +236,7 @@ func DeJwe(jwe string, privatekey crypto.PrivateKey) (jwt string, err error) {
 			enc.EncryptionMethod = em
 		}
 	}
-	enc.Label = partsb64[0]
+	enc.Label = peica[0]
 	enc.EncryptedSessionkey = parts[1]
 	enc.Iv = parts[2]
 	enc.CipherText = parts[3]
