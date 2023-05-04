@@ -279,21 +279,21 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	libxml2Lock.Lock()
 	defer libxml2Lock.Unlock()
 	if found, err := xp.find(context, path); err == nil {
-        switch found.Type() {
-        case xpath.NodeSetType:
-            for _, node := range found.NodeList() {
-                res = append(res, strings.TrimSpace(node.NodeValue()))
-            }
-            found.Free()
-        case xpath.StringType:
-            res = []string{xpath.String(found, nil)}
-        case xpath.BooleanType:
-            res = []string{fmt.Sprintf("%v", xpath.Bool(found, nil))}
-        case xpath.NumberType:
-            res = []string{fmt.Sprintf("%v", xpath.Number(found, nil))}
-        default:
-    		panic(string(found.Type()))
-        }
+		switch found.Type() {
+		case xpath.NodeSetType:
+			for _, node := range found.NodeList() {
+				res = append(res, strings.TrimSpace(node.NodeValue()))
+			}
+			found.Free()
+		case xpath.StringType:
+			res = []string{xpath.String(found, nil)}
+		case xpath.BooleanType:
+			res = []string{fmt.Sprintf("%v", xpath.Bool(found, nil))}
+		case xpath.NumberType:
+			res = []string{fmt.Sprintf("%v", xpath.Number(found, nil))}
+		default:
+			panic(string(found.Type()))
+		}
 	}
 	return
 }
@@ -337,13 +337,13 @@ func (xp *Xp) QueryMultiMulti(context types.Node, path string, elements []string
 }
 
 func Flatten(slice [][]string) (res []string) {
-    res = []string{}
-    for _, i := range slice {
-        for _, j := range i {
-            res = append(res, j)
-        }
-    }
-    return
+	res = []string{}
+	for _, i := range slice {
+		for _, j := range i {
+			res = append(res, j)
+		}
+	}
+	return
 }
 
 // Query1 Utility function to get the content of the first node from a xpath query
@@ -358,7 +358,7 @@ func (xp *Xp) Query1(context types.Node, path string) string {
 
 // Very poor mans "parser" for splitting xpaths by / - just enough for our purpose - allowing /'s in quoted strings
 func parse(xpath string) (path []string) {
-    var quoted1, quoted2, slashed bool
+	var quoted1, quoted2, slashed bool
 	path = []string{}
 	buf := ""
 
@@ -369,13 +369,13 @@ func parse(xpath string) (path []string) {
 			if quoted1 || quoted2 {
 				buf += z
 			} else {
-			    if slashed {
-			        buf += ".//"
-			    } else {
-			        if buf != "" {
-    				    path = append(path, buf)
-	    			    buf = ""
-	    			}
+				if slashed {
+					buf += ".//"
+				} else {
+					if buf != "" {
+						path = append(path, buf)
+						buf = ""
+					}
 				}
 			}
 			slashed = !slashed
@@ -396,11 +396,10 @@ func parse(xpath string) (path []string) {
 	return
 }
 
-// QueryDashP generative xpath query - ie. mkdir -p for xpath ...
-// Understands simple xpath expressions including indexes and attribute values
-func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
+func (xp *Xp) qdp(context types.Node, query string, data interface{}, before types.Node) types.Node {
 	qdpLock.Lock()
 	defer qdpLock.Unlock()
+	val, ok := data.(string)
 
 	// split in path elements, an element might include an attribute expression incl. value eg.
 	// /md:EntitiesDescriptor/md:EntityDescriptor[@entityID="https://wayf.wayf.dk"]/md:SPSSODescriptor
@@ -409,23 +408,24 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 	if context == nil {
 		context, _ = xp.Doc.DocumentElement()
 	}
-	for _, element := range parse(query) {
-		//element := elements[1]
+	elements := parse(query)
+	lastElementNo := len(elements) - 1
+	for i, element := range elements {
 		if element == "" {
 			continue
 		}
+		lastElement := i == lastElementNo
 		attrContext = nil
 		nodes := xp.Query(context, element)
 		if len(nodes) > 0 {
 			context = nodes[0]
 			continue
 		} else {
-			d := re2.FindAllStringSubmatch(element, -1)
+			d := re2.FindStringSubmatch(element)
 			if len(d) == 0 {
 				panic("QueryDashP problem")
 			}
-			dn := d[0]
-			ns, element, positionS, attributes := dn[1], dn[2], dn[3], dn[4]
+			ns, element, positionS, attributes := d[1], d[2], d[3], d[4]
 			if element != "" {
 				if positionS == "0" {
 					context = xp.createElementNS(ns, element, context, before)
@@ -447,37 +447,45 @@ func (xp *Xp) QueryDashP(context types.Node, query string, data string, before t
 				before = nil
 			}
 			if attributes != "" {
-				for _, attribute := range strings.SplitAfter(attributes, "]") {
+			    attributeList := strings.SplitAfter(attributes, "]")
+			    lastAttributeNo := len(attributeList)-1
+				for i, attribute := range  attributeList {
 					if attribute != "" {
-						for _, kv := range re3.FindAllStringSubmatch(attribute, -1) {
+					    lastAttribute := i == lastAttributeNo
+						kv := re3.FindStringSubmatch(attribute)
+						if (lastElement && lastAttribute && ok) || kv[2] != "" {
 							context.(types.Element).SetAttribute(kv[1], kv[2])
 							ctx, _ := context.(types.Element).GetAttribute(kv[1])
 							attrContext = ctx.(types.Node)
 						}
+
 					}
 				}
 			}
 		}
 	}
 	// adding the provided value always at end ..
-	if data != "" {
-		if data == "\x1b" {
-			data = ""
-		}
+	if ok {
 		if attrContext != nil {
-			attrContext.SetNodeValue(html.EscapeString(data))
+			attrContext.SetNodeValue(html.EscapeString(val))
 		} else {
-			context.SetNodeValue(html.EscapeString(data))
+			context.SetNodeValue(html.EscapeString(val))
 		}
 	}
 	return context
 }
 
-func (xp *Xp) QueryDashPOptional(context types.Node, query string, data string, before types.Node) types.Node {
+// QueryDashP generative xpath query - ie. mkdir -p for xpath ...
+// Understands simple xpath expressions including indexes and attribute values
+func (xp *Xp) QueryDashP(context types.Node, query string, data string, before types.Node) types.Node {
 	if data != "" {
-		return xp.QueryDashP(context, query, data, before)
+		return xp.qdp(context, query, data, before)
 	}
-	return nil
+	return xp.qdp(context, query, nil, before)
+}
+
+func (xp *Xp) QueryDashPForce(context types.Node, query string, data string, before types.Node) types.Node {
+	return xp.qdp(context, query, data, before)
 }
 
 // CreateElementNS Create an element with the given namespace
@@ -485,7 +493,6 @@ func (xp *Xp) createElementNS(prefix, element string, context types.Node, before
 
 	//    q.Q(context, xp.PPE(context))
 	newcontext, _ = xp.Doc.CreateElementNS(Namespaces[prefix], prefix+":"+element)
-
 	if before != nil {
 		before.AddPrevSibling(newcontext)
 	} else {
