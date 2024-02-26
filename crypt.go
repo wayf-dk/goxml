@@ -192,7 +192,11 @@ func Verify(pub crypto.PublicKey, algo crypto.Hash, digest, signature []byte) (e
 func signGoEleven(digest []byte, privatekey crypto.PrivateKey, algo string) ([]byte, error) {
 	data := append([]byte(config.CryptoMethods[algo].DerPrefix), digest...)
 	pk, _ := privatekey.(HSMKey)
-	return callHSM("sign", data, pk, "CKM_RSA_PKCS", "")
+	mechanism := "CKM_RSA_PKCS"
+	if algo == "ed25519" {
+	    mechanism = "CKM_EDDSA"
+	}
+	return callHSM("sign", data, pk, mechanism, "")
 }
 
 func Jwe(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithms []string) (jwe string, err error) {
