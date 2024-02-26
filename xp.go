@@ -292,7 +292,7 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 		case xpath.NumberType:
 			res = []string{fmt.Sprintf("%v", xpath.Number(found, nil))}
 		default:
-			panic(string(found.Type()))
+			panic(fmt.Sprint(found.Type()))
 		}
 	}
 	return
