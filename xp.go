@@ -298,21 +298,6 @@ func (xp *Xp) QueryMulti(context types.Node, path string) (res []string) {
 	return
 }
 
-func (xp *Xp) QueryMulti2(context types.Node, path1, path2 string) (res []string) {
-	if found, err := xp.find(context, path1); err == nil {
-		switch found.Type() {
-		case xpath.NodeSetType:
-			for _, node := range found.NodeList() {
-				res = append(res, xp.QueryMulti(node, path2)...)
-			}
-			found.Free()
-		default:
-			panic(fmt.Sprint(found.Type()))
-		}
-	}
-	return
-}
-
 // QueryMultiMulti function to get the content of the nodes from a xpath query, and a list of subqueries
 // as a slice of slice of slice of strings
 // A QueryMulti call for each element might not reflect the structure properly
