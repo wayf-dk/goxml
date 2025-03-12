@@ -303,15 +303,15 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 		enc.Label = base64.RawURLEncoding.EncodeToString(headerJson)
 	}
 
-	encrypt := encryptAESGCM
+	encrypt := EncryptAESGCM
 	switch encP.mode {
 	case "gcm":
-		encrypt = encryptAESGCM
+		encrypt = EncryptAESGCM
 	case "cbc":
 		encrypt = encryptAESCBC
 	}
 
-	sessionkey, enc.CipherText, enc.Iv, enc.AuthTag, err = encrypt(cleartext, []byte(enc.Label), encP.keySize)
+	sessionkey, enc.CipherText, enc.Iv, enc.AuthTag, err = encrypt(cleartext, []byte{}, []byte(enc.Label), encP.keySize)
 	if err != nil {
 		return
 	}
@@ -325,7 +325,7 @@ func BaseEncrypt(cleartext []byte, publickey *rsa.PublicKey, encryptionAlgorithm
 }
 
 func baseDecrypt(enc *encryptionResult, privatekey crypto.PrivateKey) (cleartext []byte, err error) {
-	decrypt := decryptGCM
+	decrypt := DecryptAESGCM
 	digestAlgorithm := crypto.SHA256
 	hsmDigestAlgorithm := "CKM_SHA_1"
 
@@ -341,9 +341,9 @@ func baseDecrypt(enc *encryptionResult, privatekey crypto.PrivateKey) (cleartext
 
 	switch enc.EncryptionMethod {
 	case "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "http://www.w3.org/2001/04/xmlenc#aes192-cbc", "http://www.w3.org/2001/04/xmlenc#aes256-cbc":
-		decrypt = decryptCBC
+		decrypt = decryptAESCBC
 	case "http://www.w3.org/2009/xmlenc11#aes128-gcm", "http://www.w3.org/2009/xmlenc11#aes192-gcm", "http://www.w3.org/2009/xmlenc11#aes256-gcm":
-		decrypt = decryptGCM
+		decrypt = DecryptAESGCM
 	default:
 		return nil, NewWerror("unsupported encryptionMethod", "encryptionMethod: "+enc.EncryptionMethod)
 	}
@@ -453,10 +453,13 @@ func (xp *Xp) Decrypt(encryptedAssertion types.Node, privatekey crypto.PrivateKe
 }
 
 // encryptAESCBC encrypts the plaintext with a generated random key and returns both the key and the ciphertext using CBC
-func encryptAESCBC(plaintext, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
-	key = make([]byte, keySize/8)
-	if _, err = io.ReadFull(rand.Reader, key); err != nil {
-		return
+func encryptAESCBC(plaintext, inkey, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
+    key = inkey
+    if len(key) == 0 {
+        key = make([]byte, keySize/8)
+        if _, err = io.ReadFull(rand.Reader, key); err != nil {
+            return
+        }
 	}
 	paddinglen := aes.BlockSize - len(plaintext)%aes.BlockSize
 
@@ -479,12 +482,14 @@ func encryptAESCBC(plaintext, label []byte, keySize int) (key, cipherText, iv, a
 }
 
 // encryptAESGCM encrypts the plaintext with a generated random key and returns both the key and the ciphertext using GCM
-func encryptAESGCM(plaintext, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
-	key = make([]byte, keySize/8)
-	if _, err = io.ReadFull(rand.Reader, key); err != nil {
-		return
-	}
-
+func EncryptAESGCM(plaintext, inkey, label []byte, keySize int) (key, cipherText, iv, authTag []byte, err error) {
+    key = inkey
+    if len(key) == 0 {
+        key = make([]byte, keySize/8)
+        if _, err = io.ReadFull(rand.Reader, key); err != nil {
+            return
+        }
+    }
 	iv = make([]byte, 12)
 	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
 		return
@@ -509,7 +514,7 @@ func encryptAESGCM(plaintext, label []byte, keySize int) (key, cipherText, iv, a
 }
 
 // decryptGCM decrypts the ciphertext using the supplied key
-func decryptGCM(key, ciphertext, label []byte) (plaintext []byte, err error) {
+func DecryptAESGCM(key, ciphertext, label []byte) (plaintext []byte, err error) {
 	if len(ciphertext) < 40 { // we want at least 12 bytes of actual data in addition to 12 bytes Initialization Vector and 16 bytes Authentication Tag
 		return nil, errors.New("Not enough data to decrypt for AES-GCM")
 	}
@@ -535,7 +540,7 @@ func decryptGCM(key, ciphertext, label []byte) (plaintext []byte, err error) {
 }
 
 // decryptCBC decrypts the ciphertext using the supplied key
-func decryptCBC(key, ciphertext, label []byte) (plaintext []byte, err error) {
+func decryptAESCBC(key, ciphertext, label []byte) (plaintext []byte, err error) {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
