@@ -416,16 +416,25 @@ func (xp *Xp) qdp(context types.Node, query string, data interface{}, before typ
 		}
 		lastElement := i == lastElementNo
 		attrContext = nil
-		nodes := xp.Query(context, element)
+		nselement, zero := strings.CutSuffix(element, "[0]")
+		nodes := xp.Query(context, nselement)
+        d := re2.FindStringSubmatch(element)
+        if len(d) == 0 {
+            panic("QueryDashP problem")
+        }
+        ns, element, positionS, attributes := d[1], d[2], d[3], d[4]
 		if len(nodes) > 0 {
+			if zero { // add element after last node
+			    if before == nil {
+    			    before, _ = nodes[len(nodes)-1].NextSibling()
+    			}
+				context = xp.createElementNS(ns, element, context, before)
+				before = nil
+				continue
+			}
 			context = nodes[0]
 			continue
 		} else {
-			d := re2.FindStringSubmatch(element)
-			if len(d) == 0 {
-				panic("QueryDashP problem")
-			}
-			ns, element, positionS, attributes := d[1], d[2], d[3], d[4]
 			if element != "" {
 				if positionS == "0" {
 					context = xp.createElementNS(ns, element, context, before)
@@ -447,11 +456,11 @@ func (xp *Xp) qdp(context types.Node, query string, data interface{}, before typ
 				before = nil
 			}
 			if attributes != "" {
-			    attributeList := strings.SplitAfter(attributes, "]")
-			    lastAttributeNo := len(attributeList)-1
-				for i, attribute := range  attributeList {
+				attributeList := strings.SplitAfter(attributes, "]")
+				lastAttributeNo := len(attributeList) - 1
+				for i, attribute := range attributeList {
 					if attribute != "" {
-					    lastAttribute := i == lastAttributeNo
+						lastAttribute := i == lastAttributeNo
 						kv := re3.FindStringSubmatch(attribute)
 						if (lastElement && lastAttribute && ok) || kv[2] != "" {
 							context.(types.Element).SetAttribute(kv[1], kv[2])
