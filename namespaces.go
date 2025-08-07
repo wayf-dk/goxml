@@ -33,4 +33,5 @@ var Namespaces = map[string]string{
 	"wsa":        "http://www.w3.org/2005/08/addressing",
 	"a":          "http://schemas.xmlsoap.org/ws/2009/09/identity/claims",
 	"eidas":      "http://eidas.europa.eu/saml-extensions",
+	"nl":         "https://data.gov.dk/eid/saml/extensions",
 }
