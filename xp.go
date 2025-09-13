@@ -3,8 +3,8 @@ package goxml
 import (
 	"fmt"
 	"html"
-	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -93,7 +93,7 @@ func NewXpFromString(xml string) (xp *Xp) {
 
 // NewXpFromFile Creates a NewXP from File. Used for testing purposes
 func NewXpFromFile(file string) *Xp {
-	xml, err := ioutil.ReadFile(file)
+	xml, err := os.ReadFile(file)
 	if err != nil {
 		log.Panic(err)
 	}
