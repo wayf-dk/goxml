@@ -163,17 +163,21 @@ func (xp *Xp) DocGetRootElement() types.Node {
 
 // Rm deletes the node
 func (xp *Xp) Rm(context types.Node, path string) {
-	for _, node := range xp.Query(context, path) {
-		libxml2Lock.Lock()
+	libxml2Lock.Lock()
+	defer libxml2Lock.Unlock()
+    for _, node := range xpath.NodeList(xp.find(context, path)) {
 		parent, _ := node.ParentNode()
 		switch x := node.(type) {
 		case types.Attribute:
 			parent.(types.Element).RemoveAttribute(x.NodeName())
 		case types.Element:
-			parent.RemoveChild(x)
+    		for _, t := range xpath.NodeList(xp.find(node, `preceding-sibling::text()[1][normalize-space() = ""]`)) {
+	    	    p, _ := t.ParentNode()
+			    p.RemoveChild(t)
+			}
+    		parent.RemoveChild(x)
 		}
 		node.Free()
-		libxml2Lock.Unlock()
 	}
 }
 
