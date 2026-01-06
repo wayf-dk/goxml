@@ -171,10 +171,6 @@ func (xp *Xp) Rm(context types.Node, path string) {
 		case types.Attribute:
 			parent.(types.Element).RemoveAttribute(x.NodeName())
 		case types.Element:
-    		for _, t := range xpath.NodeList(xp.find(node, `preceding-sibling::text()[1][normalize-space() = ""]`)) {
-	    	    p, _ := t.ParentNode()
-			    p.RemoveChild(t)
-			}
     		parent.RemoveChild(x)
 		}
 		node.Free()
