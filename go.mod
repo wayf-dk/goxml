@@ -1,6 +1,6 @@
 module github.com/wayf-dk/goxml
 
-go 1.22.0
+go 1.24.11
 
 require (
 	github.com/wayf-dk/go-libxml2 v0.0.0-20240227081341-0086175c2fd4
@@ -11,8 +11,8 @@ require (
 require (
 	github.com/miekg/pkcs11 v1.1.2-0.20231115102856-9078ad6b9d4b // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	golang.org/x/crypto v0.20.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 )
 
 replace (
