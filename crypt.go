@@ -144,7 +144,12 @@ func (xp *Xp) VerifySignature(context types.Node, publicKeys []crypto.PublicKey)
 	}
 	signatureMethod := xp.Query1(signedInfo, "ds:SignatureMethod/@Algorithm")
 
-	signedInfoDigest := Hash(SigningMethods[signatureMethod].Hash, signedInfoC14n)
+	sig, ok := SigningMethods[signatureMethod]
+	if !ok {
+	    return fmt.Errorf("Unsupported signature method: %s", signatureMethod)
+	}
+
+	signedInfoDigest := Hash(sig.Hash, signedInfoC14n)
 
 	//    log.Printf("SigAlg: %s %s %s %s\n", xp.QueryString(context, "local-name(.)"), xp.Query1(context, "saml:Issuer"), digestMethod, signatureMethod)
 
